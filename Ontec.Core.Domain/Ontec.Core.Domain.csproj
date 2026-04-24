@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Models\Dto\Admin\**" />
+    <Compile Remove="Requests\Admin\**" />
+    <Compile Remove="Requests\Consumption\Command\**" />
+    <Compile Remove="Requests\Dashboard\Command\**" />
+    <EmbeddedResource Remove="Models\Dto\Admin\**" />
+    <EmbeddedResource Remove="Requests\Admin\**" />
+    <EmbeddedResource Remove="Requests\Consumption\Command\**" />
+    <EmbeddedResource Remove="Requests\Dashboard\Command\**" />
+    <None Remove="Models\Dto\Admin\**" />
+    <None Remove="Requests\Admin\**" />
+    <None Remove="Requests\Consumption\Command\**" />
+    <None Remove="Requests\Dashboard\Command\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Models\Dto\Consumption\MeterConsumptionDto.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="12.0.1" />
+    <PackageReference Include="Dapper" Version="2.1.24" />
+    <PackageReference Include="FirebaseAdmin" Version="3.3.0" />
+    <PackageReference Include="FluentValidation" Version="11.9.0" />
+    <PackageReference Include="MediatR" Version="11.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Npgsql" Version="8.0.2" />
+  </ItemGroup>
+
+</Project>

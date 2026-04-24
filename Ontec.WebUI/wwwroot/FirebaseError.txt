@@ -1,0 +1,205 @@
+File created successfully.2025-06-17 19:10:33 - dwfK1F2TTSOiqA4-_jWyvg:APA91bFbvn5zrMBGp7DlWLH53KOVaH9mXBzceWGpHkqdlVKpX0xTXbrQG-5GtI09LtSmYfU4CvIneEirrRkulLf0OxF3HkUmqrFErBFnaIEeZM9gdcGk1qQ
+2025-06-17 19:10:33 - Meter request Rejected
+2025-06-17 19:10:33 - CPE001 :  Rejected
+2025-06-19 10:39:24 - System.NullReferenceException: Object reference not set to an instance of an object.
+   at Ontec.Core.Application.Common.Helper.PushNotification.SendMessage(String title, String body, String deviceToken, Int32 userId) in D:\Megsys\Projects\MeerkertAPI\Ontec.Core.Application\Common\Helper\PushNotificationMessages.cs:line 50
+2025-06-19 10:44:09 - before Send notification
+2025-06-19 10:44:09 - dwfK1F2TTSOiqA4-_jWyvg:APA91bFbvn5zrMBGp7DlWLH53KOVaH9mXBzceWGpHkqdlVKpX0xTXbrQG-5GtI09LtSmYfU4CvIneEirrRkulLf0OxF3HkUmqrFErBFnaIEeZM9gdcGk1qQ
+2025-06-19 10:44:09 - Meter request Approved
+2025-06-19 10:44:09 - CPE001 :  Approved
+2025-06-19 10:44:11 - after Send notification
+2025-06-19 10:45:10 - before Send notification
+2025-06-19 10:45:11 - dwfK1F2TTSOiqA4-_jWyvg:APA91bFbvn5zrMBGp7DlWLH53KOVaH9mXBzceWGpHkqdlVKpX0xTXbrQG-5GtI09LtSmYfU4CvIneEirrRkulLf0OxF3HkUmqrFErBFnaIEeZM9gdcGk1qQ
+2025-06-19 10:45:18 - Meter request Approved
+2025-06-19 10:45:21 - CPE001 :  Approved
+2025-06-19 10:45:28 - after Send notification
+2025-06-23 11:39:07 - before Send notification
+2025-06-23 11:39:07 - dwfK1F2TTSOiqA4-_jWyvg:APA91bFbvn5zrMBGp7DlWLH53KOVaH9mXBzceWGpHkqdlVKpX0xTXbrQG-5GtI09LtSmYfU4CvIneEirrRkulLf0OxF3HkUmqrFErBFnaIEeZM9gdcGk1qQ
+2025-06-23 11:39:07 - Top Up
+2025-06-23 11:39:07 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 10
+2025-06-23 11:39:09 - FirebaseAdmin.Messaging.FirebaseMessagingException: Requested entity was not found.
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndReadAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndDeserializeAsync[TResult](HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessagingClient.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message)
+   at Ontec.Core.Application.Common.Helper.PushNotification.SendMessage(String title, String body, String deviceToken, Int32 userId) in D:\Megsys\Projects\MeerkertAPI\Ontec.Core.Application\Common\Helper\PushNotificationMessages.cs:line 88
+2025-06-23 11:39:09 - Messgae not sent
+2025-06-23 11:46:42 - before Send notification
+2025-06-23 11:46:42 - dwfK1F2TTSOiqA4-_jWyvg:APA91bFbvn5zrMBGp7DlWLH53KOVaH9mXBzceWGpHkqdlVKpX0xTXbrQG-5GtI09LtSmYfU4CvIneEirrRkulLf0OxF3HkUmqrFErBFnaIEeZM9gdcGk1qQ
+2025-06-23 11:46:42 - Top Up
+2025-06-23 11:46:42 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 9
+2025-06-23 11:46:43 - FirebaseAdmin.Messaging.FirebaseMessagingException: Requested entity was not found.
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndReadAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndDeserializeAsync[TResult](HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessagingClient.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message)
+   at Ontec.Core.Application.Common.Helper.PushNotification.SendMessage(String title, String body, String deviceToken, Int32 userId)
+2025-06-23 11:46:43 - Messgae not sent
+2025-06-23 11:50:53 - before Send notification
+2025-06-23 11:50:53 - dwfK1F2TTSOiqA4-_jWyvg:APA91bFbvn5zrMBGp7DlWLH53KOVaH9mXBzceWGpHkqdlVKpX0xTXbrQG-5GtI09LtSmYfU4CvIneEirrRkulLf0OxF3HkUmqrFErBFnaIEeZM9gdcGk1qQ
+2025-06-23 11:50:53 - Top Up
+2025-06-23 11:50:53 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 8
+2025-06-23 11:50:54 - FirebaseAdmin.Messaging.FirebaseMessagingException: Requested entity was not found.
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndReadAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndDeserializeAsync[TResult](HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessagingClient.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message)
+   at Ontec.Core.Application.Common.Helper.PushNotification.SendMessage(String title, String body, String deviceToken, Int32 userId)
+2025-06-23 11:50:54 - Messgae not sent
+2025-06-23 11:54:43 - before Send notification
+2025-06-23 11:54:43 - dwfK1F2TTSOiqA4-_jWyvg:APA91bFbvn5zrMBGp7DlWLH53KOVaH9mXBzceWGpHkqdlVKpX0xTXbrQG-5GtI09LtSmYfU4CvIneEirrRkulLf0OxF3HkUmqrFErBFnaIEeZM9gdcGk1qQ
+2025-06-23 11:54:43 - Top Up
+2025-06-23 11:54:43 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 7
+2025-06-23 11:54:44 - FirebaseAdmin.Messaging.FirebaseMessagingException: Requested entity was not found.
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndReadAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndDeserializeAsync[TResult](HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessagingClient.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message)
+   at Ontec.Core.Application.Common.Helper.PushNotification.SendMessage(String title, String body, String deviceToken, Int32 userId)
+2025-06-23 11:54:44 - Messgae not sent
+2025-06-23 15:51:56 - before Send notification
+2025-06-23 15:51:56 - dv2_pjf6Sii4KnBv8PFaJC:APA91bF5LcTf86bxkxsYyr5LHt2AwW7ay79T3v8jr7Lal3MpvzCZLRuRfOVBU8TDqTGN5SoH5sfxPtuGwMq1fYXDugoBzJgIz8LKrE07Iw7HE_EQrG57fJI
+2025-06-23 15:51:56 - Top Up
+2025-06-23 15:51:56 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 9.01
+2025-06-23 15:51:56 - after Send notification
+2025-06-23 15:51:56 - Messgae sent successfully
+2025-06-23 15:52:19 - before Send notification
+2025-06-23 15:52:19 - dv2_pjf6Sii4KnBv8PFaJC:APA91bF5LcTf86bxkxsYyr5LHt2AwW7ay79T3v8jr7Lal3MpvzCZLRuRfOVBU8TDqTGN5SoH5sfxPtuGwMq1fYXDugoBzJgIz8LKrE07Iw7HE_EQrG57fJI
+2025-06-23 15:52:19 - Top Up
+2025-06-23 15:52:19 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 9.01
+2025-06-23 15:52:19 - after Send notification
+2025-06-23 15:52:19 - Messgae sent successfully
+2025-06-23 15:52:25 - before Send notification
+2025-06-23 15:52:25 - dv2_pjf6Sii4KnBv8PFaJC:APA91bF5LcTf86bxkxsYyr5LHt2AwW7ay79T3v8jr7Lal3MpvzCZLRuRfOVBU8TDqTGN5SoH5sfxPtuGwMq1fYXDugoBzJgIz8LKrE07Iw7HE_EQrG57fJI
+2025-06-23 15:52:25 - Top Up
+2025-06-23 15:52:25 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 9.01
+2025-06-23 15:52:25 - after Send notification
+2025-06-23 15:52:25 - Messgae sent successfully
+2025-06-23 15:52:38 - before Send notification
+2025-06-23 15:52:38 - dv2_pjf6Sii4KnBv8PFaJC:APA91bF5LcTf86bxkxsYyr5LHt2AwW7ay79T3v8jr7Lal3MpvzCZLRuRfOVBU8TDqTGN5SoH5sfxPtuGwMq1fYXDugoBzJgIz8LKrE07Iw7HE_EQrG57fJI
+2025-06-23 15:52:38 - Top Up
+2025-06-23 15:52:38 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 9.01
+2025-06-23 15:52:38 - after Send notification
+2025-06-23 15:52:38 - Messgae sent successfully
+2025-06-23 15:52:44 - before Send notification
+2025-06-23 15:52:44 - dv2_pjf6Sii4KnBv8PFaJC:APA91bF5LcTf86bxkxsYyr5LHt2AwW7ay79T3v8jr7Lal3MpvzCZLRuRfOVBU8TDqTGN5SoH5sfxPtuGwMq1fYXDugoBzJgIz8LKrE07Iw7HE_EQrG57fJI
+2025-06-23 15:52:44 - Top Up
+2025-06-23 15:52:44 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 9.01
+2025-06-23 15:52:45 - after Send notification
+2025-06-23 15:52:45 - Messgae sent successfully
+2025-06-23 15:54:57 - before Send notification
+2025-06-23 15:54:57 - dv2_pjf6Sii4KnBv8PFaJC:APA91bF5LcTf86bxkxsYyr5LHt2AwW7ay79T3v8jr7Lal3MpvzCZLRuRfOVBU8TDqTGN5SoH5sfxPtuGwMq1fYXDugoBzJgIz8LKrE07Iw7HE_EQrG57fJI
+2025-06-23 15:54:57 - Top Up
+2025-06-23 15:54:57 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 9.01
+2025-06-23 15:54:57 - after Send notification
+2025-06-23 15:54:57 - Messgae sent successfully
+2025-06-23 15:56:47 - before Send notification
+2025-06-23 15:56:47 - dv2_pjf6Sii4KnBv8PFaJC:APA91bF5LcTf86bxkxsYyr5LHt2AwW7ay79T3v8jr7Lal3MpvzCZLRuRfOVBU8TDqTGN5SoH5sfxPtuGwMq1fYXDugoBzJgIz8LKrE07Iw7HE_EQrG57fJI
+2025-06-23 15:56:47 - Top Up
+2025-06-23 15:56:47 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 9.01
+2025-06-23 15:56:47 - after Send notification
+2025-06-23 15:56:47 - Messgae sent successfully
+2025-06-23 16:00:43 - before Send notification
+2025-06-23 16:00:43 - dv2_pjf6Sii4KnBv8PFaJC:APA91bF5LcTf86bxkxsYyr5LHt2AwW7ay79T3v8jr7Lal3MpvzCZLRuRfOVBU8TDqTGN5SoH5sfxPtuGwMq1fYXDugoBzJgIz8LKrE07Iw7HE_EQrG57fJI
+2025-06-23 16:00:43 - Top Up
+2025-06-23 16:00:43 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 9.01
+2025-06-23 16:00:43 - after Send notification
+2025-06-23 16:00:43 - Messgae sent successfully
+2025-06-23 16:05:13 - before Send notification
+2025-06-23 16:05:13 - dv2_pjf6Sii4KnBv8PFaJC:APA91bF5LcTf86bxkxsYyr5LHt2AwW7ay79T3v8jr7Lal3MpvzCZLRuRfOVBU8TDqTGN5SoH5sfxPtuGwMq1fYXDugoBzJgIz8LKrE07Iw7HE_EQrG57fJI
+2025-06-23 16:05:13 - Top Up
+2025-06-23 16:05:13 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 9.01
+2025-06-23 16:05:13 - after Send notification
+2025-06-23 16:05:13 - Messgae sent successfully
+2025-06-23 16:22:20 - before Send notification
+2025-06-23 16:22:20 - dv2_pjf6Sii4KnBv8PFaJC:APA91bF5LcTf86bxkxsYyr5LHt2AwW7ay79T3v8jr7Lal3MpvzCZLRuRfOVBU8TDqTGN5SoH5sfxPtuGwMq1fYXDugoBzJgIz8LKrE07Iw7HE_EQrG57fJI
+2025-06-23 16:22:20 - Top Up
+2025-06-23 16:22:20 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 8.01
+2025-06-23 16:22:20 - after Send notification
+2025-06-23 16:22:20 - Messgae sent successfully
+2025-06-24 14:03:22 - before Send notification
+2025-06-24 14:03:22 - dv2_pjf6Sii4KnBv8PFaJC:APA91bF5LcTf86bxkxsYyr5LHt2AwW7ay79T3v8jr7Lal3MpvzCZLRuRfOVBU8TDqTGN5SoH5sfxPtuGwMq1fYXDugoBzJgIz8LKrE07Iw7HE_EQrG57fJI
+2025-06-24 14:03:22 - Top Up
+2025-06-24 14:03:22 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 6.01
+2025-06-24 14:03:24 - FirebaseAdmin.Messaging.FirebaseMessagingException: Requested entity was not found.
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndReadAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndDeserializeAsync[TResult](HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessagingClient.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message)
+   at Ontec.Core.Application.Common.Helper.PushNotification.SendMessage(String title, String body, String deviceToken, Int32 userId)
+2025-06-24 14:03:24 - Messgae not sent
+2025-06-24 14:04:04 - before Send notification
+2025-06-24 14:04:04 - dv2_pjf6Sii4KnBv8PFaJC:APA91bF5LcTf86bxkxsYyr5LHt2AwW7ay79T3v8jr7Lal3MpvzCZLRuRfOVBU8TDqTGN5SoH5sfxPtuGwMq1fYXDugoBzJgIz8LKrE07Iw7HE_EQrG57fJI
+2025-06-24 14:04:04 - Top Up
+2025-06-24 14:04:04 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 0
+2025-06-24 14:04:05 - FirebaseAdmin.Messaging.FirebaseMessagingException: Requested entity was not found.
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndReadAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndDeserializeAsync[TResult](HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessagingClient.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message)
+   at Ontec.Core.Application.Common.Helper.PushNotification.SendMessage(String title, String body, String deviceToken, Int32 userId)
+2025-06-24 14:04:05 - Messgae not sent
+2025-06-24 14:10:45 - before Send notification
+2025-06-24 14:10:45 - dv2_pjf6Sii4KnBv8PFaJC:APA91bF5LcTf86bxkxsYyr5LHt2AwW7ay79T3v8jr7Lal3MpvzCZLRuRfOVBU8TDqTGN5SoH5sfxPtuGwMq1fYXDugoBzJgIz8LKrE07Iw7HE_EQrG57fJI
+2025-06-24 14:10:45 - Top Up
+2025-06-24 14:10:45 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 0
+2025-06-24 14:10:46 - FirebaseAdmin.Messaging.FirebaseMessagingException: Requested entity was not found.
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndReadAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndDeserializeAsync[TResult](HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessagingClient.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message)
+   at Ontec.Core.Application.Common.Helper.PushNotification.SendMessage(String title, String body, String deviceToken, Int32 userId)
+2025-06-24 14:10:46 - Messgae not sent
+2025-06-24 14:15:28 - before Send notification
+2025-06-24 14:15:28 - dv2_pjf6Sii4KnBv8PFaJC:APA91bF5LcTf86bxkxsYyr5LHt2AwW7ay79T3v8jr7Lal3MpvzCZLRuRfOVBU8TDqTGN5SoH5sfxPtuGwMq1fYXDugoBzJgIz8LKrE07Iw7HE_EQrG57fJI
+2025-06-24 14:15:28 - Top Up
+2025-06-24 14:15:28 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 0
+2025-06-24 14:15:29 - FirebaseAdmin.Messaging.FirebaseMessagingException: Requested entity was not found.
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndReadAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndDeserializeAsync[TResult](HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessagingClient.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message)
+   at Ontec.Core.Application.Common.Helper.PushNotification.SendMessage(String title, String body, String deviceToken, Int32 userId) in D:\Megsys\Projects\MeerkertAPI\Ontec.Core.Application\Common\Helper\PushNotificationMessages.cs:line 88
+2025-06-24 14:15:29 - Messgae not sent
+2025-06-24 14:22:53 - before Send notification
+2025-06-24 14:22:53 - dv2_pjf6Sii4KnBv8PFaJC:APA91bF5LcTf86bxkxsYyr5LHt2AwW7ay79T3v8jr7Lal3MpvzCZLRuRfOVBU8TDqTGN5SoH5sfxPtuGwMq1fYXDugoBzJgIz8LKrE07Iw7HE_EQrG57fJI
+2025-06-24 14:22:53 - Top Up
+2025-06-24 14:22:53 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 0
+2025-06-24 14:22:53 - FirebaseAdmin.Messaging.FirebaseMessagingException: Requested entity was not found.
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndReadAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndDeserializeAsync[TResult](HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessagingClient.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message)
+   at Ontec.Core.Application.Common.Helper.PushNotification.SendMessage(String title, String body, String deviceToken, Int32 userId) in D:\Megsys\Projects\MeerkertAPI\Ontec.Core.Application\Common\Helper\PushNotificationMessages.cs:line 88
+2025-06-24 14:22:53 - Messgae not sent
+2025-06-24 14:31:18 - before Send notification
+2025-06-24 14:31:18 - dv2_pjf6Sii4KnBv8PFaJC:APA91bF5LcTf86bxkxsYyr5LHt2AwW7ay79T3v8jr7Lal3MpvzCZLRuRfOVBU8TDqTGN5SoH5sfxPtuGwMq1fYXDugoBzJgIz8LKrE07Iw7HE_EQrG57fJI
+2025-06-24 14:31:18 - Top Up
+2025-06-24 14:31:18 - Meerkat Utilities<br>Payment received.<br>RCT: <br>Amt: R 0<br>Remaining bal: R 0
+2025-06-24 14:31:18 - FirebaseAdmin.Messaging.FirebaseMessagingException: Requested entity was not found.
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndReadAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Util.ErrorHandlingHttpClient`1.SendAndDeserializeAsync[TResult](HttpRequestMessage request, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessagingClient.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun, CancellationToken cancellationToken)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message, Boolean dryRun)
+   at FirebaseAdmin.Messaging.FirebaseMessaging.SendAsync(Message message)
+   at Ontec.Core.Application.Common.Helper.PushNotification.SendMessage(String title, String body, String deviceToken, Int32 userId)
+2025-06-24 14:31:18 - Messgae not sent

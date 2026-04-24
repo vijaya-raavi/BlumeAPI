@@ -1,0 +1,17 @@
+﻿namespace Ontec.Core.Domain.Models.Dto.User
+{
+    public class UpdateConsumerDto :BaseModel
+    {
+        public int Id { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string EmailId { get; set; }
+        public string MobileNumber { get; set; }
+        public int RoleId { get; set; }
+        public int CompanyId { get; set; }
+        public string Address { get; set; }
+        public int Status { get; set; }
+
+      
+    }
+}
