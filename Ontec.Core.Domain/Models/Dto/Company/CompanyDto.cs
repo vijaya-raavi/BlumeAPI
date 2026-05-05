@@ -32,5 +32,6 @@ namespace Ontec.Core.Domain.Models.Dto.Company
 
         public bool IsBankTransferEnable { get; set; }
         public bool IsLekkaPay { get; set; }
+        public string PaymentGateWay { get; set; }
     }
 }

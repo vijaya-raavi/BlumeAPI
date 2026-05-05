@@ -201,4 +201,10 @@ namespace Ontec.Core.Domain.Enums
         DebitecDeposits = 4,
 
     }
+    public enum PaymentGatewaysEnum
+    {
+        Payfast = 1,
+        LekkaPay = 2
+
+    }
 }

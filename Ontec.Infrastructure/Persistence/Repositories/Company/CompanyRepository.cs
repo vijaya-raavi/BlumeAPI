@@ -201,7 +201,14 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Company
             var result = await _genericRepository.GetAsync<OntecSelectListItem>(sQuery, parameter).ConfigureAwait(false);
             return result;
         }
-       
+        public async Task<IEnumerable<OntecSelectListItem>> GetPaymentGateWays()
+        {
+            var sQuery = @"SELECT id,payment_gateway AS name FROM public.ohd_payment_gateways
+                          ORDER BY name ASC ";
+            var parameter = new DynamicParameters();
+            var result = await _genericRepository.GetAsync<OntecSelectListItem>(sQuery).ConfigureAwait(false);
+            return result;
+        }
 
     }
 }

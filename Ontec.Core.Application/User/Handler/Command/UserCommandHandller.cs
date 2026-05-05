@@ -86,7 +86,6 @@ IAuditTrail auditTrail)
                 throw new ValidationException(validatorResult.Errors);
             var id = 0;
             int Status = 0;
-           
             bool isBusinessHours = false;
             try
             {
