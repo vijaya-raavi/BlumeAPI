@@ -34,7 +34,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Configuration
                          SELECT id from ohd_configuration WHERE id=@Id;";
                     var parameters = new DynamicParameters();
                     parameters.Add("@Id", configuration.Id);
-                    parameters.Add("@Value", configuration.Value.ToLower());
+                    parameters.Add("@Value", configuration.Value);
                     parameters.Add("@ModifiedAt", DateTime.UtcNow);
                     parameters.Add("@ModifiedBy", _workContext.CurrentUserId);
 

@@ -610,9 +610,8 @@ namespace Ontec.Core.Application.Common.Helper
             {
 
                 // Define the endpoint URL
-                //string url = "http://bizswitch.net:3530";
-                string url = "https://blumeenergy.bizswitch.net:30880/";
-               // string url = "http://meerkatuat.bizswitch.net:3680";
+                //string url = "https://blumeenergy.bizswitch.net:30880/";
+                 string url = "http://pyxisuat2.bizswitch.net:3530";
                 // Add Accept-Encoding header
                 httpClient.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate");
                 //httpClient.DefaultRequestHeaders.Add("Content-Encoding", "gzip, deflate");

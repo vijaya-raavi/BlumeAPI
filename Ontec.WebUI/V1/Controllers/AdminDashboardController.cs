@@ -2,10 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Ontec.Core.Domain.Models.Dto;
 using Ontec.Core.Domain.Models.Dto.AdminDashboard;
-using Ontec.Core.Domain.Models.Dto.Transaction;
 using Ontec.Core.Domain.Requests.AdminDashboard.Queries;
 using Ontec.Core.Domain.Requests.Dashboard.Queries;
-using Ontec.Core.Domain.Requests.Transaction.Queries;
 
 namespace Ontec.WebUI.V1.Controllers
 {
@@ -18,11 +16,10 @@ namespace Ontec.WebUI.V1.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> GetPaymentDashboard([FromRoute]int estateId)
+        public async Task<IActionResult> GetPaymentDashboard()
         {
             var request = new GetPaymentDashboardQuery
             {
-                EstateId=estateId,
             };
             return Ok(await Mediator.Send(request).ConfigureAwait(false));
         }

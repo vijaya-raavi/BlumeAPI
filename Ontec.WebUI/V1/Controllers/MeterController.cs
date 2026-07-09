@@ -98,13 +98,18 @@ namespace Ontec.WebUI.V1.Controllers
             return Ok(await Mediator.Send(request).ConfigureAwait(false));
         }
 
-        [HttpPost("verify-meter")]
+        [HttpGet("verify-meter{PropertyId}/{MeterNumber}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<AddUpdateResultDto>))]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> VerifyMeter([FromBody] VerifyMeterQuery request)
+        public async Task<IActionResult> VerifyMeter(int PropertyId, string MeterNumber)
         {
+            var request = new VerifyMeterQuery()
+            {
+                PropertyId = PropertyId,
+                MeterNumber = MeterNumber
+            };
             return Ok(await Mediator.Send(request).ConfigureAwait(false));
         }
 
@@ -136,20 +141,25 @@ namespace Ontec.WebUI.V1.Controllers
 
 
         #region GetMetersFromMaster
-        [HttpPost("get_meters_from_master")]
+        [HttpGet("get_meters_from_master{PropertyId}/{MeterNumber}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<MetersUtilityDto>))]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> GetMetersbyMeterNumber([FromBody] GetMetersByMeterNumberQuery request)
+        public async Task<IActionResult> GetMetersbyMeterNumber(int PropertyId, string MeterNumber)
         {
-            
+            var request = new GetMetersByMeterNumberQuery()
+            {
+                MeterNumber = MeterNumber,
+                PropertyId = PropertyId,
+            };
+
+
             return Ok(await Mediator.Send(request).ConfigureAwait(false));
         }
         #endregion
-
         #region AddMetersFromList
-        
+
         [HttpPost("add_meters_from_list")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(string))]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

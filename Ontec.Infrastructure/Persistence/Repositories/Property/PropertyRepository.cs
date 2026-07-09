@@ -89,7 +89,7 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
 						                          --,state
                                                   --,country
                                                   ,created_at
-                                                    ,estate_id)
+                                                    )
                         VALUES ( @name
                                 ,@unit_number
                                -- ,@EFtNo
@@ -102,7 +102,7 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
 						        --,@state
                                 --,@country
                                 ,@created_at
-                                ,@EstateId)
+                                )
                      RETURNING lastval()";
 
 
@@ -119,7 +119,6 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
                 //parameters.Add("@state", request.State);
                 //parameters.Add("@country", request.Country);
                 parameters.Add("@created_at", DateTime.UtcNow);
-                parameters.Add("@EstateId", request.EstateId);
 
 
                 var result = await _genericRepository.ExecuteScalarAsync<int>(sQuery, parameters).ConfigureAwait(false);
@@ -139,8 +138,7 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
                             p.name as Name,
                             p.unit_number as UnitNumber, 
                             p.address_line_1 as Address , 
-                            p.estate_id AS EstateId,
-                            e.estate AS Estate,
+                           
                             p.status_id AS StatusId	,
 							es.display_value as Status,	
                             CASE WHEN p.owner_id=@OwnerId THEN 'Owner' ELSE role.name END as RoleName,
@@ -150,7 +148,7 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
                             LEFT JOIN (select * from ohd_property_user_relation where status_id!=@Inactive) AS r ON p.id = r.property_id
                               LEFT JOIN public.ohd_enum_status as es on p.status_id=es.id
                             LEFT JOIN ohd_enum_user_relation as role on role.id=r.user_relation_id
-                            LEFT JOIN ohd_estate as e on p.estate_id=e.id
+                           
                             LEFT JOIN (
                                 SELECT property_id, COUNT(*) AS meter_count
                                 FROM ohd_meter
@@ -203,12 +201,9 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
                            ,per.address_line_1 as AddressLine1,per.address_line_2 as AddressLine2,
                             per.city,
                             per.state,
-                            per.country,
-                            per.estate_id As EstateId,
-                            e.estate As Estate
-                           --,per.eft_number as EftNumber 
+                            per.country              
                            FROM ohd_property as per
-                           LEFT JOIN ohd_estate as e on per.estate_id=e.id
+                           
                            WHERE per.id=@id and per.Status_Id!=@StatusId";
                 var parameters = new DynamicParameters();
                 parameters.Add("@id", propertyId);
@@ -233,12 +228,8 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
                            ,per.address_line_1 as AddressLine1,per.address_line_2 as AddressLine2,
                             per.city,
                             per.state,
-                            per.country,
-                            per.estate_id As EstateId,
-                            e.estate As Estate
-                           --,per.eft_number as EftNumber 
+                            per.country
                            FROM ohd_property as per
-                           LEFT JOIN ohd_estate as e on per.estate_id=e.id
                            WHERE per.id=@id";
                 var parameters = new DynamicParameters();
                 parameters.Add("@id", propertyId);
@@ -412,9 +403,10 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
         {
             var sQuery = @"Select mt.meter_number from public.ohd_property as per
                             LEFT JOIN public.ohd_meter as mt on per.Id=mt.property_id
-                            where per.Id=@PropertyId";
+                            where per.Id=@PropertyId AND per.status_id=@Active AND mt.status_id=@Active";
             var parameters = new DynamicParameters();
             parameters.Add("@PropertyId", propertyId);
+            parameters.Add("@Active", (int)StatusEnum.Active);
 
             return await _genericRepository.GetAsync<string>(sQuery, parameters).ConfigureAwait(false);
         }
@@ -779,15 +771,12 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
                               STRING_AGG(DISTINCT mt.meter_number, ', ') AS MeterNumbers,
                               CONCAT(COUNT(DISTINCT per.user_id), ' Users ', ' ',
                               COUNT(DISTINCT mt.id) ,' Meters')  AS Sources,
-                              p.address_line_1 AS Address,
-                              p.estate_id AS EstateId,
-                              e.estate AS Estate,
+                              p.address_line_1 AS Address,                             
                               p.status_id AS StatusId,
                               es.display_value AS Status
                             FROM 
                               ohd_property AS p
-                              LEFT JOIN public.ohd_enum_status AS es ON p.status_id = es.id
-                              LEFT JOIN ohd_estate AS e ON p.estate_id = e.id
+                              LEFT JOIN public.ohd_enum_status AS es ON p.status_id = es.id                             
                               LEFT JOIN ohd_user AS u ON p.owner_id = u.id
                               LEFT JOIN ohd_meter AS mt ON p.id = mt.property_id  AND mt.status_id=@Active
                               LEFT JOIN  public.ohd_property_user_relation AS per ON p.id = per.property_id  AND per.status_id=@Active
@@ -813,44 +802,7 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
 
 
                 parameters.Add("@Active", (int)StatusEnum.Active);
-                //if (!string.IsNullOrEmpty(request.SearchText.Trim()) && (request.SearchText.Trim() != "string"))
-                //{
-                //    var searchText = request.SearchText.Trim();
-                //    var searchTerms = searchText.ToLower().Split(' ');
-                //    var searchConditions = new List<string>();
-                //    var index = 0;
-
-                //    // Add condition for the full search text
-                //    var fullSearchTextParam = "@SearchTextFull";
-                //    searchConditions.Add($@"(lower(p.name) ILIKE {fullSearchTextParam}
-                //           OR lower(p.unit_number) ILIKE {fullSearchTextParam}
-                //           OR lower(p.address_line_1) ILIKE {fullSearchTextParam}
-                //           --OR (e.estate) ILIKE {fullSearchTextParam}
-                //            OR (mt.meter_number) ILIKE {fullSearchTextParam}
-                //          )");
-                //    parameters.Add(fullSearchTextParam, "%" + searchText.ToLower() + "%");
-
-                //    // Add conditions for each split term
-                //    foreach (var term in searchTerms)
-                //    {
-                //        var paramName = "@SearchText" + index;
-                //        searchConditions.Add($@"(lower(p.name) ILIKE {paramName}
-                //               OR lower(p.unit_number) ILIKE {paramName}
-                //               OR lower(p.address_line_1) ILIKE {paramName}
-                //              -- OR (e.estate) ILIKE {paramName}
-                //                OR (mt.meter_number) ILIKE  {paramName}
-                //               )");
-                //        parameters.Add(paramName, "%" + term + "%");
-                //        index++;
-                //    }
-
-                //    if (searchConditions.Any())
-                //    {
-                //        sQuery += " AND (" + string.Join(" OR ", searchConditions) + ")";
-                //    }
-
-                //}
-
+                
 
                 if (!string.IsNullOrWhiteSpace(request.SearchText) && request.SearchText.Trim() != "string")
                 {
@@ -879,7 +831,7 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
                     }
 
                 }
-                sQuery += " GROUP BY  p.id, CONCAT(u.first_name, ' ', u.last_name), p.name, p.unit_number,  p.address_line_1, p.estate_id, e.estate, p.status_id, es.display_value";
+                sQuery += " GROUP BY  p.id, CONCAT(u.first_name, ' ', u.last_name), p.name, p.unit_number,  p.address_line_1, p.estate_id,  p.status_id, es.display_value";
                 sQuery += " ORDER BY p.status_id asc";
                 // sQuery += " LIMIT @PageSize OFFSET @Offset ";
                 var properties = await _genericRepository.GetAsync<PropertyDto>(sQuery, parameters).ConfigureAwait(false);
@@ -925,7 +877,7 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
             string baseQuery = @"
                                     FROM ohd_property p
                                     LEFT JOIN public.ohd_enum_status es ON p.status_id = es.id
-                                    LEFT JOIN ohd_estate e ON p.estate_id = e.id
+                                   -- LEFT JOIN ohd_estate e ON p.estate_id = e.id
                                     LEFT JOIN ohd_user u ON p.owner_id = u.id
                                     LEFT JOIN ohd_meter mt ON p.id = mt.property_id AND mt.status_id = @Active
                                     LEFT JOIN public.ohd_property_user_relation per ON p.id = per.property_id AND per.status_id = @Active
@@ -958,6 +910,8 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
 
                     baseQuery += $@"AND (
                                          LOWER(p.name) ILIKE {param}
+                                         OR LOWER(u.first_name) ILIKE {param}
+                                         OR LOWER(u.last_name) ILIKE {param}
                                          OR LOWER(p.unit_number) ILIKE {param}
                                          OR LOWER(p.address_line_1) ILIKE {param}
                                          OR LOWER(mt.meter_number) ILIKE {param}
@@ -981,9 +935,7 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
                                 STRING_AGG(DISTINCT mt.meter_number, ', ') AS MeterNumbers,
                                 CONCAT(COUNT(DISTINCT per.user_id), ' Users ', ' ',
                                        COUNT(DISTINCT mt.id), ' Meters') AS Sources,
-                                p.address_line_1 AS Address,
-                                p.estate_id AS EstateId,
-                                e.estate AS Estate,
+                                p.address_line_1 AS Address,                               
                                 p.status_id AS StatusId,
                                 es.display_value AS Status
                                 " +
@@ -991,7 +943,7 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
                             @"
                                 GROUP BY 
                                     p.id, Owner, p.name, p.unit_number, p.address_line_1,
-                                    p.estate_id, e.estate, p.status_id, es.display_value
+                                     p.status_id, es.display_value
                                 ORDER BY p.status_id ASC
                                 LIMIT @PageSize OFFSET @Offset
                                 ";
@@ -1005,6 +957,99 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
             dt.Data = rows.ToList();
             return dt;
         }
+        public async Task<IEnumerable<PropertyMeter>> GetAllMeterNumbersByPropertyId(int propertyId)
+        {
+            try
+            {
+                var sQuery = @"Select mt.meter_number AS MeterNumber, mt.id AS MeterId,
+                             es.display_value as MeterStatus,
+                            mt.status_id AS MeterStatusId,
+							per.unit_number  AS PropertyUnitNumber
+                            from public.ohd_property as per
+                            LEFT JOIN public.ohd_meter as mt on per.id=mt.property_id
+                            LEFT JOIN public.ohd_enum_status as es ON mt.status_id=es.id
+                            where per.id=@PropertyId";
+                var parameters = new DynamicParameters();
+                parameters.Add("@PropertyId", propertyId);
 
+                return await _genericRepository.GetAsync<PropertyMeter>(sQuery, parameters).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                return new List<PropertyMeter>();
+            }
+        }
+
+        public async Task<IEnumerable<LinkedProperty>> GetMeterLinkedProperty(List<string> meterNumbers)
+        {
+            try
+            {
+                var sQuery = @"
+                            SELECT
+                            m.meter_number AS MeterNumber ,
+                            p.name as LinkedPropertyName,
+                            p.id AS LinkedPropertyId,
+                            p.unit_number AS LinkedPropertyUnitNumber,
+                            es.display_value AS LinkedPropertyMeterStatus
+                            FROM public.ohd_meter  as m                         
+                            LEFT JOIN public.ohd_property as p ON m.property_id=p.id
+                            LEFT JOIN public.ohd_enum_status as es ON m.status_id=es.id
+                            WHERE m.meter_number =ANY(@MeterNumbers) AND( m.status_id=@Active OR m.status_id=@Pending OR m.status_id=@Rejected)";
+                var parameters = new DynamicParameters();
+                parameters.Add("@MeterNumbers", meterNumbers);
+                parameters.Add("@Active", (int)StatusEnum.Active);
+                parameters.Add("@Pending", (int)StatusEnum.Pending);
+                parameters.Add("@Rejected", (int)StatusEnum.Rejected);
+
+                return await _genericRepository.GetAsync<LinkedProperty>(sQuery, parameters).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                return new List<LinkedProperty>();
+            }
+        }
+        public async Task<int> UpdateMeterStatus(List<int> ids)
+        {
+            try
+            {
+                var sQuery = @"
+                            WITH updated AS (
+                                UPDATE public.ohd_meter
+                                SET status_id = @Active,
+                                    modified_at = @ModifiedAt
+                                WHERE id = ANY(@Ids)
+                                RETURNING id
+                            )
+                            SELECT COUNT(*) FROM updated";
+                var parameters = new DynamicParameters();
+                parameters.Add("@ModifiedAt", DateTime.UtcNow);
+                parameters.Add("@Active", (int)StatusEnum.Active);
+                parameters.Add("@Ids", ids);
+
+                return await _genericRepository.ExecuteScalarAsync<int>(sQuery, parameters).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                return 0;
+            }
+        }
+        public async Task<int> UpdateCustomerAgreementValueByPropertyId(int propertyId, string value)
+        {
+            var sQuery = @"Update public.ohd_Property
+                         Set status_id=@Active,
+                        modified_at = @ModifiedAt,
+                        customer_agreement_id=@Value
+                         where id=@PropertyId;
+                        SELECT id FROM public.ohd_Property
+                         where id=@PropertyId;";
+            var parameters = new DynamicParameters();
+            parameters.Add("@PropertyId", propertyId);
+            parameters.Add("@Value", value);
+            parameters.Add("@Active", (int)StatusEnum.Active);
+            parameters.Add("@ModifiedAt", DateTime.UtcNow);
+
+            int id = await _genericRepository.ExecuteScalarAsync<int>(sQuery, parameters);
+            return id;
+        }
     }
 }

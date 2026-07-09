@@ -10,7 +10,7 @@ namespace Ontec.Core.Domain.Interface.ManagePermission
         Task<int> IsUserPermissionsExsist(int userId);
         Task UpdateUserPermissions(ManagePermissionQuery request);
         Task<IEnumerable<SettingTypeDto>> GetSettingsTypeId(GetPermissionsQuery request);
-        Task<IEnumerable<SettingTypeDto>> GetRoleMaster();
+        Task<IEnumerable<SettingTypeDto>> GetSettingTypeaster();
         Task<int> IsPermissionExistForOperator(int userId);
     }
 }

@@ -10,15 +10,12 @@
     <Compile Remove="Models\Dto\Admin\**" />
     <Compile Remove="Requests\Admin\**" />
     <Compile Remove="Requests\Consumption\Command\**" />
-    <Compile Remove="Requests\Dashboard\Command\**" />
     <EmbeddedResource Remove="Models\Dto\Admin\**" />
     <EmbeddedResource Remove="Requests\Admin\**" />
     <EmbeddedResource Remove="Requests\Consumption\Command\**" />
-    <EmbeddedResource Remove="Requests\Dashboard\Command\**" />
     <None Remove="Models\Dto\Admin\**" />
     <None Remove="Requests\Admin\**" />
     <None Remove="Requests\Consumption\Command\**" />
-    <None Remove="Requests\Dashboard\Command\**" />
   </ItemGroup>
 
   <ItemGroup>

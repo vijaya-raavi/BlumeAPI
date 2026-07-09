@@ -1,8 +1,5 @@
-﻿using System.Globalization;
-using System.Text.RegularExpressions;
-using MediatR;
+﻿using MediatR;
 using Ontec.Core.Application.Common.Exceptions;
-using Ontec.Core.Application.Common.Helper;
 using Ontec.Core.Domain.Common.Helper;
 using Ontec.Core.Domain.Enums;
 using Ontec.Core.Domain.Extension;
@@ -159,13 +156,10 @@ namespace Ontec.Core.Application.Login.Handler.Command
                         }
                         //mail send 
                         var company = await _companyRepository.GetCompanyDetails(request.CompanyId).ConfigureAwait(false);
-                        var emailTemplates = await _emailTemplateRepository.GetEmailTemplates().ConfigureAwait(false);
+                        //var emailTemplates = await _emailTemplateRepository.GetEmailTemplates().ConfigureAwait(false);
                         var companyDetails = await _companyHelper.GetCompany(request.CompanyId).ConfigureAwait(false);
-                        var welcomeEmail = emailTemplates.FirstOrDefault(g => g.Name.Equals("Welcome Email")); 
-                        string body;
-                        string title;
-                        string subtitle;
-                        string forEvent;
+                       // var welcomeEmail = emailTemplates.FirstOrDefault(g => g.Name.Equals("Welcome Email")); 
+                        
                         var result = new LoginResult
                         {
                             UserId = userId,
@@ -189,9 +183,9 @@ namespace Ontec.Core.Application.Login.Handler.Command
 
                         };
                         await _notificationRepository.AddNotifications(newNotification).ConfigureAwait(false);
-                        title = "Registered successfully";
-                        subtitle = " ";
-                        forEvent = "newUser";
+                        string title = "Registered successfully";
+                        string subtitle = " ";
+                        string forEvent = "newUser";
 
 
                         var group = await _notificationRepository.GetGroups().ConfigureAwait(false);
@@ -219,22 +213,22 @@ namespace Ontec.Core.Application.Login.Handler.Command
                         //        welcomeEmail.Html = welcomeEmail.Html.Replace("{{" + key + "}}", user.FirstName);
                         //    }
                         //}
-                        if (!string.IsNullOrEmpty(welcomeEmail.Html))
-                        {
-                            var model = new PropertyUserWelcomeEmailDto
-                            {
-                                CompanyName = companyDetails.Name,
-                                FirstName = user.FirstName,
-                                Email = user.Email,
-                                Mobile = user.Mobile,
-                                companyEmail = companyDetails.Email,
-                                Domain = companyDetails.Domain,
-                                companyLogo = companyDetails.RelativeUrl,
+                        //if (!string.IsNullOrEmpty(welcomeEmail.Html))
+                        //{
+                        //    var model = new PropertyUserWelcomeEmailDto
+                        //    {
+                        //        CompanyName = companyDetails.Name,
+                        //        FirstName = user.FirstName,
+                        //        Email = user.Email,
+                        //        Mobile = user.Mobile,
+                        //        companyEmail = companyDetails.Email,
+                        //        Domain = companyDetails.Domain,
+                        //        companyLogo = companyDetails.RelativeUrl,
                                 
-                            };
-                            var template = Template.Parse(welcomeEmail.Html);
-                            welcomeEmail.Html = template.Render(model, memberRenamer: member => member.Name);
-                        }
+                        //    };
+                        //    var template = Template.Parse(welcomeEmail.Html);
+                        //    welcomeEmail.Html = template.Render(model, memberRenamer: member => member.Name);
+                        //}
                         EmailModelClass obj = new()
                         {
                             title = "Registered successfully",
@@ -243,15 +237,12 @@ namespace Ontec.Core.Application.Login.Handler.Command
                             subtitle = "",
                             mobile = user.Mobile,
                             propertyUser = user.FirstName,
-                           // body = "You are successfully registered into " + company.CompanyName + " . Kindly update your profile to proceed.",
-                            body=welcomeEmail.Html,
+                            body = "You are successfully registered into " + company.CompanyName + " . Kindly update your profile to proceed.",
+                           // body=welcomeEmail.Html,
                             documentPath = "",
                             companyId = user.CompanyId
 
-
-
                         };
-
                        
                         await _otpService.SendEventMail(obj).ConfigureAwait(false);
 
@@ -354,45 +345,47 @@ namespace Ontec.Core.Application.Login.Handler.Command
                     var result = await _userRepository.UpdatePassword(request.Password, user.Id);
                     response.Id = result;
                     response.Message = " Password reset successfully!";
+                    string body = "Password reset for user name : " + user.UserName;
                     AddOrUpdateNotificationsQuery newNotification = new()
                     {
                         UserID = user.Id,
                         Title = "Password Reset successfully",
-                        Description = " Password reset for user name : " + user.UserName,
+                        Description = body,
                         IsRead = (int)StatusEnum.Sent,
                         NotificationType = (int)NotificationType.Updated
 
                     };
                     await _notificationRepository.AddNotifications(newNotification).ConfigureAwait(false);
-                  
-                    var emailTemplates = await _emailTemplateRepository.GetEmailTemplates().ConfigureAwait(false);
-                    var passwordEmail = emailTemplates.FirstOrDefault(g => g.Name.Equals("Password Reset"));
-                    if (!string.IsNullOrEmpty(passwordEmail.Html))
-                    {
-                        string htmlTemplate = passwordEmail.Html;
-                        var matches = Regex.Matches(passwordEmail.Html, @"{{(.*?)}}");
-                        List<string> placeholders = matches.Cast<Match>()
-                                                .Select(m => m.Groups[1].Value) // Group[1] is the captured variable name
-                        .Distinct()
-                                                .ToList();
-                        var userDict = _genericRepository.ToDictionary(user);
-                        foreach (var key in placeholders)
-                        {
-                            if (userDict.TryGetValue(key, out var value))
-                            {
-                                passwordEmail.Html = passwordEmail.Html.Replace("{{" + key + "}}", user.FirstName);
-                            }
-                        }
-                        EmailModelClass obj = new()
+
+                    //var emailTemplates = await _emailTemplateRepository.GetEmailTemplates().ConfigureAwait(false);
+                    // var passwordEmail = emailTemplates.FirstOrDefault(g => g.Name.Equals("Password Reset"));
+                    //if (!string.IsNullOrEmpty(passwordEmail.Html))
+                    //{
+                    //    string htmlTemplate = passwordEmail.Html;
+                    //    var matches = Regex.Matches(passwordEmail.Html, @"{{(.*?)}}");
+                    //    List<string> placeholders = matches.Cast<Match>()
+                    //                            .Select(m => m.Groups[1].Value) // Group[1] is the captured variable name
+                    //    .Distinct()
+                    //                            .ToList();
+                    //    var userDict = _genericRepository.ToDictionary(user);
+                    //    foreach (var key in placeholders)
+                    //    {
+                    //        if (userDict.TryGetValue(key, out var value))
+                    //        {
+                    //            passwordEmail.Html = passwordEmail.Html.Replace("{{" + key + "}}", user.FirstName);
+                    //        }
+                    //    }
+                    string title = "Password Reset successfully";
+                    EmailModelClass obj = new()
                         {
 
-                            title = "",
+                            title = title,
                             email = user.Email,
                             forEvent = "PasswordChanged",
                             subtitle = "",
                             mobile = user.Mobile,
                             propertyUser = user.UserName,
-                            body = passwordEmail.Html,
+                            body = body,
                             documentPath = "",
                             companyId = user.CompanyId
                         };
@@ -400,10 +393,8 @@ namespace Ontec.Core.Application.Login.Handler.Command
                         {
                             await _otpService.SendEventMail(obj).ConfigureAwait(false);
                         }
-                    }
-                    //string title = "Password Reset successfully";
-                    //string forEvent = "PasswordChanged";
-                    //await _otpService.SendEventMail(user.FirstName, "", user.Email, user.Mobile, title, "", forEvent).ConfigureAwait(false);
+                    // }
+                    
                     await _userRepository.LogOutUsersAllSessions(result).ConfigureAwait(false);
                 }
             }

@@ -5,6 +5,5 @@ namespace Ontec.Core.Domain.Requests.AdminDashboard.Queries
 {
     public class GetPaymentDashboardQuery : IRequest<PaymentDashboardDto>
     {
-        public int EstateId {  get; set; }
     }
 }

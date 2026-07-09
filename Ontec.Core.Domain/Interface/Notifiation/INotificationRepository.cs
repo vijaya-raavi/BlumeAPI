@@ -37,5 +37,6 @@ namespace Ontec.Core.Domain.Interface.Notifiation
         Task<int> InsertTopicUser(int groupId, int userId);
         Task<int> AddNewUserInCustomersInNotificationTopics(int userId, int groupId);
         Task<string> GetTopicName(int id);
+        Task<IEnumerable<GroupLinkingDto>> GetConsumerWiseGroupLinking(int id);
     }
 }

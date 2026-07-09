@@ -585,37 +585,37 @@ namespace Ontec.Core.Application.Debitech.Command
 
                                                     var amount = PurchaseDetails.stdamt.ToString().Replace(",", ".");
                                                     mailBody = company.Name +
-                                                      "\n: Thank you for your payment. The transaction details are as follows:" +
-                                                     "\nPayment received." +
-                                                     "\nMeter: " + PurchaseDetails.MeterNumber +
-                                                     "\nRCT: " + PurchaseDetails.RCTNo +
-                                                     "\nAmt: R " + Math.Round(Convert.ToDecimal(amount) / 100, 2) +
-                                                     "\nToken: " + PurchaseDetails.StandardTokens +
-                                                     "\nUnits: " + PurchaseDetails.Units +
-                                                     "\n: Please review the attached purchase receipt for further information.";
+                                                      "<br> Thank you for your payment. The transaction details are as follows:" +
+                                                     "<br>Payment received." +
+                                                     "<br>Meter: " + PurchaseDetails.MeterNumber +
+                                                     "<br>RCT: " + PurchaseDetails.RCTNo +
+                                                     "<br>Amt: R " + Math.Round(Convert.ToDecimal(amount) / 100, 2) +
+                                                     "<br>Token: " + PurchaseDetails.StandardTokens +
+                                                     "<br>Units: " + PurchaseDetails.Units +
+                                                     "<br>: Please review the attached purchase receipt for further information.";
                                                     body = mailBody;
                                                 }
                                                 if (!string.IsNullOrEmpty(PurchaseDetails.BsstToken))
                                                 {
                                                     var amount = PurchaseDetails.BsstTokenAmount.ToString().Replace(",", ".");
                                                     mailBody = company.Name +
-                                                        "\n: Thank you for your payment. The transaction details are as follows:" +
-                                                      "\nPayment received." +
-                                                      "\nRCT: " + PurchaseDetails.RCTNo +
-                                                      "\nAmt: R " + Math.Round(Convert.ToDecimal(amount) / 100, 2) +
-                                                      "\n: Please review the attached purchase receipt for further information.";
+                                                        "<br> Thank you for your payment. The transaction details are as follows:" +
+                                                      "<br>Payment received." +
+                                                      "<br>RCT: " + PurchaseDetails.RCTNo +
+                                                      "<br>Amt: R " + Math.Round(Convert.ToDecimal(amount) / 100, 2) +
+                                                      "<br>: Please review the attached purchase receipt for further information.";
                                                     body = mailBody;
                                                 }
                                                 else
                                                 {
                                                     var amount = PurchaseDetails.ActualRechargeAmount.ToString().Replace(",", ".");
                                                     mailBody = company.Name +
-                                                        "\n: Thank you for your payment. The transaction details are as follows:" +
-                                                      "\nPayment received." +
-                                                      "\nRCT: " + PurchaseDetails.RCTNo +
-                                                      "\nAmt: R " + Math.Round(Convert.ToDecimal(amount) / 100, 2) +
-                                                      "\nRemaining bal: R " + Math.Round(Convert.ToDecimal(amount) / 100, 2) +
-                                                       "\n: Please review the attached purchase receipt for further information.";
+                                                        "<br> Thank you for your payment. The transaction details are as follows:" +
+                                                      "<br>Payment received." +
+                                                      "<br>RCT: " + PurchaseDetails.RCTNo +
+                                                      "<br>Amt: R " + Math.Round(Convert.ToDecimal(amount) / 100, 2) +
+                                                      "<br>Remaining bal: R " + Math.Round(Convert.ToDecimal(amount) / 100, 2) +
+                                                       "<br>: Please review the attached purchase receipt for further information.";
                                                 }
 
                                                 body = mailBody;
@@ -668,26 +668,17 @@ namespace Ontec.Core.Application.Debitech.Command
                                         await _notificationRepository.AddNotifications(newNotification).ConfigureAwait(false);
 
                                         mailBody = company.Name +
-                                                       "\nTransaction failed reason: " + vednFailedMessage +
-                                                       "\nTransaction remark: " + transactionRemark +
-                                                       "\nAmt: R " + topupTransaction.Amount +
-                                                       "\nTransaction fee: R " + topupTransaction.TransactionFee +
-                                                       "\nRecharge amount: R " + feeDto.TopUpAmount;
+                                                       "<br>Transaction failed reason: " + vednFailedMessage +
+                                                       "<br>Transaction remark: " + transactionRemark +
+                                                       "<br>Amt: R " + topupTransaction.Amount +
+                                                       "<br>Transaction fee: R " + topupTransaction.TransactionFee +
+                                                       "<br>Recharge amount: R " + feeDto.TopUpAmount;
 
 
                                         body = mailBody;
 
 
                                         await SendEmailMessage(topupTransaction, userDetails, body).ConfigureAwait(false);
-
-
-
-                                        //if recharge failed, then added amount to wallet
-                                        //var UpdatedBalance = userWallet.Balance + topupTransaction.Amount;
-
-                                        //await _walletRepository.UpdateUserWallet(updateWalletBalance, UpdatedBalance);
-                                        //transactionRemark = "Credited after Debitech Failed Transaction";
-                                        //await _walletRepository.AddBalanceAsync(topupTransaction.UserId, topupTransaction.Amount, userWallet.Balance, transactionRemark, false, topupTransaction.Amount).ConfigureAwait(false);
 
                                         await _topUpRepository.UpdateTransactionStatus(TopUpStatusEnum.VendFailed.ToString(), (int)PaymentStatus.Failed, vendResponse.Response, transactionId, vendResponse.Token, vendResponse.keyChangeToken, vendResponse.bsstToken, vendResponse.mrktMsg, vendResponse.customerMsg, vendResponse.ReceiptNumber, vendResponse.Tarrif, vendResponse.VendReference).ConfigureAwait(false);
                                         validationMessage = "Vend request failed, amount credited to wallet.";
@@ -721,6 +712,8 @@ namespace Ontec.Core.Application.Debitech.Command
                             Message = validationMessage,
                             Status = 200
                         });
+
+                        await _topUpRepository.DeleteDebitechDuplicateNotifyRequest(debitechNotifyId).ConfigureAwait(false);
                     }
                     else
                     {

@@ -44,6 +44,11 @@ namespace Ontec.Infrastructure.Persistence.Repositories.MasterApiService
             var result = await MasterGetAsync<string, TransactionMasterApiModel>(url);
             return result;
         }
+        public async Task<ChargeScheduleData> GetCustomerAuxChargeSchedule(string url)
+        {
+            var result = await MasterGetAsync<string, ChargeScheduleData>(url);
+            return result;
+        }
     }
     
 }

@@ -19,4 +19,12 @@
         public bool IsInHouseTransaction { get; set; }
         public string EFTRefNo { get; set; }
     }
+    public class AdminTopUpDto
+    {
+        public DatatableModel<UserPaymentsDto> UserPayments { get; set; }
+        public DatatableModel<GetTopUpTransaction> UserPendingPayments { get; set; }
+
+
+
+    }
 }

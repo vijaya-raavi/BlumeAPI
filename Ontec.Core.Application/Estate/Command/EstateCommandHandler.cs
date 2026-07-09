@@ -72,7 +72,7 @@ namespace Ontec.Core.Application.Estate.Command
                 {
                     objAudit.AddedBy = _workContext.CurrentUserId;
                     objAudit.ActionTable = "ohd_estate";
-                    objAudit.ModuleName = "Property";
+                    objAudit.ModuleName = "Estate";
 
                     objAudit.StatusId = request.StatusId;
                     objAudit.Action = "Estate Updated";
@@ -96,7 +96,7 @@ namespace Ontec.Core.Application.Estate.Command
                 {
                     objAudit.AddedBy = _workContext.CurrentUserId;
                     objAudit.ActionTable = "ohd_estate";
-                    objAudit.ModuleName = "Property";
+                    objAudit.ModuleName = "Estate";
 
                     objAudit.StatusId = (int)StatusEnum.Active;
                     objAudit.Action = "Estate Added";
@@ -152,7 +152,7 @@ namespace Ontec.Core.Application.Estate.Command
         public async Task<string> Handle(DeleteEstateRequestCommand request, CancellationToken cancellationToken)
         {
             request.TrimAllStrings();
-
+            var objAudit = new AuditHelper();
             var commonValidator = new DeleteEstateRequestCommandValidator(_estateRepository);
             var validatorResult = await commonValidator.ValidateAsync(request, cancellationToken);
             if (!validatorResult.IsValid)
@@ -162,7 +162,16 @@ namespace Ontec.Core.Application.Estate.Command
 
             await _estateRepository.DeleteEstate(request.Id).ConfigureAwait(false);
 
+            objAudit.AddedBy = _workContext.CurrentUserId;
+            objAudit.ActionTable = "ohd_estate";
+            objAudit.ModuleName = "Estate";
 
+            objAudit.StatusId = (int)StatusEnum.Inactive;
+            objAudit.Action = "Estate deleted";
+
+            objAudit.EntityName = estate.Estate;
+            objAudit.UpdatedId = request.Id;
+            await _auditTrail.AuditTrail(objAudit).ConfigureAwait(false);
 
             var company = await _companyRepository.GetCompanyDetails(_workContext.CurrentCompanyId).ConfigureAwait(false);
             AddOrUpdateNotificationsQuery newNotification = new()

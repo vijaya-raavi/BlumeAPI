@@ -116,47 +116,13 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Consumer
             return result;
         }
 
-        public async Task<ConsumerMasterDto> NewGetConsumerMaster(int estateId)
+        public async Task<ConsumerMasterDto> NewGetConsumerMaster()
         {
             var sQuery = "";
             var notVerifiedQuery = "";
-            if (estateId > 0)
-            {
-                sQuery = @"SELECT 
-                                ur.status_id AS StatusId,
-                                COUNT(DISTINCT ur.id) AS UserCount
-                            FROM public.ohd_user ur
-                            LEFT JOIN public.ohd_property p ON ur.id = p.owner_id
-                            LEFT JOIN public.ohd_property_user_relation pr ON ur.id = pr.user_id
-                            LEFT JOIN public.ohd_property pp ON pr.property_id = pp.id
-                            WHERE 
-                                ur.role_id = @RoleId
-                                AND ur.status_id IN (@Active, @Deactive, @Inactive)
-                                AND (
-                                    p.estate_id = @EstateId OR 
-                                    pp.estate_id = @EstateId
-                                )
-                                AND (pr.status_id = @Active OR pr.status_id IS NULL)
-                            GROUP BY ur.status_id;";
+           
 
-
-                notVerifiedQuery = @"SELECT COUNT(ur.id) as UserCount 
-                        FROM public.ohd_user as ur 
-                         LEFT JOIN public.ohd_property p ON ur.id = p.owner_id
-                            LEFT JOIN public.ohd_property_user_relation pr ON ur.id = pr.user_id
-                            LEFT JOIN public.ohd_property pp ON pr.property_id = pp.id
-                            WHERE ur.role_id=@RoleId AND ur.status_id  not in (@InProcess,@Deactive,@Pending,@Inactive)  
-                           AND (
-                                    p.estate_id = @EstateId AND 
-                                    pp.estate_id = @EstateId
-                                )
-                                AND (pr.status_id = @Active OR pr.status_id IS NULL)
-                            AND  p.status_id=@Active
-                        GROUP BY isverified";
-            }
-
-            else
-            {
+           
                 sQuery = @"SELECT ur.status_id as StatusId,COUNT(ur.id) as UserCount FROM public.ohd_user as ur 
                          WHERE ur.role_id=@RoleId AND ur.status_id in(@Active,@Pending,@Inactive,@Deactive)
                          GROUP BY ur.status_id";
@@ -167,7 +133,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Consumer
                                     AND status_id!=@Inactive 
                                     AND status_id!=@Pending AND status_id!=@Deactive 
                                     GROUP BY isverified ";
-            }
+            
             var result = new ConsumerMasterDto();
             var parameters = new DynamicParameters();
             parameters.Add("@RoleId", (int)RoleMasterEnum.Customer);
@@ -177,7 +143,6 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Consumer
             parameters.Add("@Deactive", (int)StatusEnum.Deactive);
             parameters.Add("@NotVerified", (int)StatusEnum.NotVerified);
             parameters.Add("@InProcess", (int)StatusEnum.InProcess);
-            parameters.Add("@EstateId", estateId);
             try
             {
                 var userCounts = await _genericRepository.GetAsync<ConsumerStatusCountDto>(sQuery, parameters).ConfigureAwait(false);
@@ -205,6 +170,11 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Consumer
                      OtherText="0"
                 },
                   new() {
+                    Id = (int)StatusEnum.Deactive,
+                    Name = StatusEnum.Deactive.ToString(),
+                     OtherText="0"
+                },
+                  new() {
                     Id = (int)StatusEnum.NotVerified,
                     Name = StatusEnum.NotVerified.ToString(),
                      OtherText="0"
@@ -227,7 +197,12 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Consumer
                  new() {
                     Id = (int)StatusEnum.Active,
                     Name =StatusEnum.Active.ToString(),
-                    OtherText=userCounts.Where(t => (t.StatusId.Equals((int)StatusEnum.Active) || (t.StatusId.Equals((int)StatusEnum.Deactive)))).Sum(t => t.UserCount).ToString()
+                    OtherText=userCounts.Where(t => t.StatusId.Equals((int)StatusEnum.Active)).Sum(t => t.UserCount).ToString()
+                },
+                 new() {
+                    Id = (int)StatusEnum.Deactive,
+                    Name =StatusEnum.Deactive.ToString(),
+                    OtherText=userCounts.Where(t => t.StatusId.Equals((int)StatusEnum.Deactive)).Sum(t => t.UserCount).ToString()
                 },
                  new() {
                     Id = (int)StatusEnum.Inactive,
@@ -313,6 +288,10 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Consumer
 
                     parameters.Add("@Deactive", (int)StatusEnum.Deactive);
                     break;
+                case (int)StatusEnum.Deactive:                    
+                    whereClause += @" AND u.status_id in (@Deactive)";
+                    parameters.Add("@Deactive", (int)StatusEnum.Deactive);
+                    break;
                 case (int)StatusEnum.Inactive:
                     whereClause += @" AND u.status_id = @StatusId ";
                     parameters.Add("@StatusId", (int)StatusEnum.Inactive);
@@ -349,7 +328,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Consumer
                              LEFT JOIN public.ohd_property as p on u.id=p.owner_id
                              LEFT JOIN public.ohd_property_user_relation as pur on u.id=pur.user_id
                                LEFT JOIN public.ohd_property AS pur_prop ON pur.property_id = pur_prop.id
-							LEFT JOIN public.ohd_estate AS e ON  p.estate_id = e.id OR pur_prop.estate_id = e.id 
+							--LEFT JOIN public.ohd_estate AS e ON  p.estate_id = e.id OR pur_prop.estate_id = e.id 
 
                              ";
             if (request.EstateId > 0)
@@ -542,7 +521,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Consumer
                             LEFT JOIN public.ohd_property p ON u.id = p.owner_id
                             LEFT JOIN public.ohd_property_user_relation pur ON u.id = pur.user_id
                             LEFT JOIN public.ohd_property pur_prop ON pur.property_id = pur_prop.id
-                            LEFT JOIN public.ohd_estate e ON p.estate_id = e.id OR pur_prop.estate_id = e.id
+                            --LEFT JOIN public.ohd_estate e ON p.estate_id = e.id OR pur_prop.estate_id = e.id
                             WHERE ur.id = @RoleId
                         ";
 
@@ -558,8 +537,8 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Consumer
                     break;
 
                 case (int)StatusEnum.Active:
-                    baseQuery += " AND u.status_id IN (@Active, @Deactive)";
-                    parameters.Add("@Deactive", (int)StatusEnum.Deactive);
+                    baseQuery += " AND u.status_id IN (@Active)";
+                    parameters.Add("@Active", (int)StatusEnum.Active);
                     break;
 
                 case (int)StatusEnum.Pending:
@@ -571,6 +550,10 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Consumer
                     baseQuery += " AND u.status_id = @Inactive";
                     parameters.Add("@Inactive", (int)StatusEnum.Inactive);
                     break;
+                case (int)StatusEnum.Deactive:
+                    baseQuery += " AND u.status_id = @Deactive";
+                    parameters.Add("@Deactive", (int)StatusEnum.Deactive);
+                    break;
 
                 case (int)StatusEnum.NotVerified:
                     baseQuery += " AND u.isverified = @IsVerified AND u.status_id = @Active";
@@ -581,11 +564,11 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Consumer
             // ----------------------------------------------------
             // ESTATE FILTER
             // ----------------------------------------------------
-            if (request.EstateId > 0)
-            {
-                parameters.Add("@EstateId", request.EstateId);
-                baseQuery += " AND e.id = @EstateId AND pur.status_id = @Active";
-            }
+            //if (request.EstateId > 0)
+            //{
+            //    parameters.Add("@EstateId", request.EstateId);
+            //    baseQuery += " AND e.id = @EstateId AND pur.status_id = @Active";
+            //}
 
             // ----------------------------------------------------
             // SEARCH FILTER
@@ -1043,20 +1026,20 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Consumer
             {
 
                 var totalPropertyQuery = @"SELECT COUNT(id)
-                                        FROM ohd_property
+                                        FROM public.ohd_property
                                         WHERE status_id=@Active;";
 
                 var totalPercentageQuery = @"WITH user_counts AS (SELECT
                                             (SELECT COUNT(ID) 
-                                            FROM ohd_user 
+                                            FROM public.ohd_user 
                                             WHERE created_at >= date_trunc('month', current_date) 
                                             AND created_at <= date_trunc('month', current_date) + interval '1 month' - interval '1 day'
                                             AND status_id in  (@Active,@Deactive,@Inactive) AND role_id=@Customer)AS ThisMonthCount,
                                             (SELECT COUNT(ID) 
-                                            FROM ohd_user 
+                                            FROM public.ohd_user 
                                             WHERE created_at <= (date_trunc('month', now())::date - 1)
                                             AND  status_id in  (@Active,@Deactive,@Inactive) AND role_id=@Customer) AS TillLastMonthCount,
-                                            (SELECT COUNT(ID) FROM ohd_user WHERE  status_id in  (@Active) AND role_id=@Customer) AS TotalUserCount
+                                            (SELECT COUNT(ID) FROM public.ohd_user WHERE  status_id in  (@Active) AND role_id=@Customer) AS TotalUserCount
                                             )SELECT
                                              round(100*ThisMonthCount/CASE WHEN TotalUserCount =0 THEN 1 ELSE TotalUserCount END ,2)/100  AS TotalPercentage,ThisMonthCount,TillLastMonthCount,TotalUserCount,
                                             CASE WHEN ThisMonthCount >= (TotalUserCount-TillLastMonthCount) THEN 'Up' ELSE 'Down' END AS TotalUserPercentageFlag
@@ -1065,11 +1048,11 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Consumer
 
                 var newPercentageQuery = @"WITH newuser AS ( SELECT
                                            (SELECT COUNT(ID)
-                                            FROM ohd_user 
+                                            FROM public.ohd_user 
                                            WHERE created_at >= (date_trunc('month', now())::date - 31) 
                                            AND created_at <= (date_trunc('month', now())::date - 1)  AND status_id in(@Active,@Pending)AND role_id=@Temporary) AS LastMonthCount,
                                            (SELECT COUNT(ID)
-                                         FROM ohd_user 
+                                         FROM public.ohd_user 
 				                         WHERE created_at >= date_trunc('month', current_date) 
                                         AND created_at <= date_trunc('month', current_date) + interval '1 month' - interval '1 day'
                                         AND status_id in(@Active,@Pending) AND role_id=@Temporary)  as NewUserCount
@@ -1081,15 +1064,15 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Consumer
 
                 var totalPropertyPercentageQuery = @"WITH property_counts AS (SELECT
                                                     (SELECT COUNT(ID) 
-                                                    FROM ohd_property 
+                                                    FROM public.ohd_property 
                                                     WHERE created_at >= date_trunc('month', current_date) 
                                                     AND created_at <= date_trunc('month', current_date) + interval '1 month' - interval '1 day'
                                                     AND status_id =@Active)AS this_month_count,
                                                     (SELECT COUNT(ID) 
-                                                    FROM ohd_property 
+                                                    FROM public.ohd_property 
                                                     WHERE created_at <= (date_trunc('month', now())::date - 1)
                                                     AND  status_id =@Active) AS till_last_month_count,
-                                                    (SELECT COUNT(ID) FROM ohd_property WHERE  status_id =@Active) AS total_count)
+                                                    (SELECT COUNT(ID) FROM public.ohd_property WHERE  status_id =@Active) AS total_count)
                                                     SELECT
                                                     (round( 100 * this_month_count/CASE WHEN total_count =0 THEN 1 ELSE total_count END )/100)  AS percentage ,
                                                     CASE WHEN this_month_count >= (total_count-till_last_month_count) THEN 'Up' ELSE 'Down' END AS TotalPropertyPercentageFlag
@@ -1098,15 +1081,15 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Consumer
 
                 var TotalActiveMeterQuery = @" WITH meter_counts AS (SELECT
                                         (SELECT COUNT(ID) 
-                                        FROM ohd_meter 
+                                        FROM public.ohd_meter 
                                         WHERE created_at >= date_trunc('month', current_date) 
                                         AND created_at <= date_trunc('month', current_date) + interval '1 month' - interval '1 day'
                                         AND status_id =@Active)AS ThisMonthCount,
                                         (SELECT COUNT(ID) 
-                                        FROM ohd_meter 
+                                        FROM public.ohd_meter 
                                         WHERE created_at <= (date_trunc('month', now())::date - 1)
                                         AND  status_id =@Active) AS TillLastMonthCount,
-                                        (SELECT COUNT(ID) FROM ohd_meter WHERE  status_id =@Active) AS TotalMeterCount)
+                                        (SELECT COUNT(ID) FROM public.ohd_meter WHERE  status_id =@Active) AS TotalMeterCount)
                                         SELECT
                                         round(100*ThisMonthCount/CASE WHEN TillLastMonthCount =0 THEN 1 ELSE TillLastMonthCount END)/100  AS TotalPercentage ,ThisMonthCount,TillLastMonthCount,TotalMeterCount,
                                         CASE WHEN ThisMonthCount >= (TotalMeterCount-TillLastMonthCount) THEN 'Up' ELSE 'Down' END AS TotalmeterPercentageFlag
@@ -1116,15 +1099,15 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Consumer
 
                 var AllMeterCountQuery = @"WITH AllMeterCounts AS (SELECT
                                         (SELECT COUNT(ID) 
-                                        FROM ohd_meter 
+                                        FROM public.ohd_meter 
                                         WHERE status_id =@Active AND created_at >= date_trunc('month', current_date) 
                                         AND created_at <= date_trunc('month', current_date) + interval '1 month' - interval '1 day'
                                         )AS ThisMonthCount,
                                         (SELECT COUNT(ID) 
-                                        FROM ohd_meter 
+                                        FROM public.ohd_meter 
                                         WHERE status_id =@Active AND  created_at <= (date_trunc('month', now())::date - 1)
                                         ) AS TillLastMonthCount,
-                                        (SELECT COUNT(ID) FROM ohd_meter WHERE status_id =@Active) AS TotalMeterCount)
+                                        (SELECT COUNT(ID) FROM public.ohd_meter WHERE status_id =@Active) AS TotalMeterCount)
                                         SELECT
                                          round(100*ThisMonthCount/CASE WHEN TotalMeterCount =0 THEN 1 ELSE TotalMeterCount END)/100   AS TotalPercentage ,ThisMonthCount,TillLastMonthCount,TotalMeterCount,
                                         CASE WHEN ThisMonthCount >= (TotalMeterCount-TillLastMonthCount) THEN 'Up' ELSE 'Down' END AS TotalmeterPercentageFlag
@@ -1163,7 +1146,6 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Consumer
                                      SELECT DISTINCT mt.id, mt.meter_type_id,mt.status_id
                                      FROM public.ohd_meter AS mt
                                          LEFT JOIN public.ohd_property as p 	on mt.property_id=p.id
-										 LEFT JOIN public.ohd_estate as e on p.estate_id=e.id   
                                      LEFT JOIN public.ohd_property_user_relation AS pur ON pur.property_id = mt.property_id
                                      LEFT JOIN public.ohd_user AS u ON u.id = pur.user_id
                                  ) AS unique_meters ON unique_meters.meter_type_id = emt.id

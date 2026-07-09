@@ -18,6 +18,7 @@
         public const string MeterVerifyied = "Meter verified successfully!";
         public const string PropertyTenantsNotEditable = "Property tenants/associate are not editable.";
         public const string NotAllowed = "The old and new password must be different.";
+        public const string PaymentIdNotAllowed = "Requested payment id is not allowed here.";
         public const string NotMatch = "The new and confirm password must be same.";
         public const string InValidPeriod = "From date and to date must contain maximum 90 days period only.";
         public const string InValidFromDate = "From date should be less than to date.";
@@ -28,5 +29,6 @@
         public const string TopUpMaxLimit = "TopUp amount above maximum limit.";
         public const string DeActivatedAccount = "Your account has been locked, please contact to admin.";
         public const string PermissionNotExist = "Permission not exists for this operator.";
+        public const string BiometricNotRegistered = "{0} biometric is not registered.";
     }
 }

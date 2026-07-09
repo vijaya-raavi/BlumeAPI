@@ -129,6 +129,232 @@ namespace Ontec.Core.Application.Dashbaord.Queries
             return await _propertyRepository.GetDashboardMastersDtoByUserId(request.UserId).ConfigureAwait(false);
         }
 
+        //public async Task<IEnumerable<DashboardMeterDayConsumptionDto>> Handle(GetDashboardMeterDayConsumptionQuery request, CancellationToken cancellationToken)
+        //{
+        //    var commonValidator = new GetDashboardMeterDayConsumptionQueryValidator(_propertyRepository);
+        //    var validatorResult = await commonValidator.ValidateAsync(request, cancellationToken);
+        //    if (!validatorResult.IsValid)
+        //        throw new ValidationException(validatorResult.Errors);
+
+        //    var meters = await _meterRepository.GetMeterMasterByPropertyId(request.PropertyId).ConfigureAwait(false);
+
+        //    var result = new List<DashboardMeterDayConsumptionDto>();
+        //    var solarResult = new SolarConsumptionDTO();
+        //    dynamic stsData = new List<GetSTSTopUpTransactions.STSTopUpTransactions>();
+        //    var currentMonth = DateTime.Now.Month;
+        //    var currentYear = DateTime.Now.Year;
+        //    var requestSts = new SendVendSTSRequestCommand();
+        //    var resultTxn = new GetSTSTopUpTransactions();
+        //    var stsresult = new List<DashboardMeterDayConsumptionDto>();
+        //    var stsCurrentMonth = DateTime.Now.Month;
+        //    List<string> rctNumbers = new List<string>();
+        //    var responses = new List<VendRequestResponse>();
+        //    if (meters != null)
+        //    {
+        //        foreach (var meter in meters)
+        //        {
+        //            var dailyTargetConsumption = double.Parse(meter.DailyTargetConsumption);
+
+        //            //meter.MeterNumber = "62030884";
+        //            meter.GuageChartDto = new GuageChartDto
+        //            {
+        //                ActualValue = 0,
+        //                TargetValue = dailyTargetConsumption
+        //            };
+        //            meter.DailyTargetConsumption = dailyTargetConsumption.ToString();
+        //            var meterUrl = _masterApiSetting.BaseUrl + _masterApiSetting.MeterNumberApi + "?meter.meterNum=" + meter.MeterNumber.ToUpper() + "&paging=(limit)(5)(offset)(0)";
+        //            var meterResult = await _masterApiConnectService.GetMeter(meterUrl).ConfigureAwait(false);
+        //            if (meterResult != null)
+        //            {
+        //                var meterId = meterResult.Data[0].Meter.Id;
+        //                var installedCapacity = meterResult.Data[0].Meter.PowerLimit;
+        //                DateTime endDate = DateTime.UtcNow.AddDays(1);
+        //                DateTime startDate = DateTime.UtcNow;
+        //                var meterReadingType = meter.MeterReadingType;
+
+        //                var startDateS = startDate.ToString("yyyy-MM-dd");
+        //                startDateS += "T00:00:000.000%2B0000";
+
+        //                var endDateS = endDate.ToString("yyyy-MM-dd");
+        //                endDateS += "T00:00:000.000%2B0200";
+
+        //                var inetrvalStart = "&filter=(readingStart)(GTE)(" + startDateS + ")";
+        //                var inetrvalEnd = "&filter=(readingEnd)(LT)(" + endDateS + ")";
+
+        //                var intervalPaging = "&paging=(limit)(5000)(offset)(0)";
+
+
+        //                var monthlyConsumption = 0.0;
+        //                if (meter.IsSolar)
+        //                {
+        //                    var solarIntervalReadingUrl = _masterApiSetting.BaseUrl + _masterApiSetting.IntervalReadingApi + "?meterId=" + meterId + intervalPaging + "&meterReadingType=" + meterReadingType + inetrvalStart + inetrvalEnd;
+
+        //                    var solardayIntervals = await _masterApiConnectService.GetMeterReadingIntervals(solarIntervalReadingUrl).ConfigureAwait(false);
+
+        //                    if (solardayIntervals != null)
+        //                    {
+        //                        var intervalReadings = solardayIntervals.Data;
+        //                        var dailyConsumption = solardayIntervals.Data.Sum(t => t.ReadingValue) / 1000;
+        //                        meter.GuageChartDto = new GuageChartDto
+        //                        {
+        //                            ActualValue = dailyConsumption,
+        //                            TargetValue = dailyTargetConsumption
+        //                        };
+
+        //                        var currentMonthReadings = intervalReadings
+        //                        .Where(t => t.ReadingTimestamp.Month == currentMonth && t.ReadingTimestamp.Year == currentYear);
+
+        //                        monthlyConsumption = currentMonthReadings.Sum(t => t.ReadingValue) / 1000;
+
+        //                        solarResult.ExportedToday = dailyConsumption;
+        //                        solarResult.ExportedForMonth = monthlyConsumption;
+
+        //                        solarResult.TodayPercentage = (solarResult.ExportedToday / Convert.ToDouble(installedCapacity)) * 100;
+
+
+        //                    }
+
+        //                    var solarMonthReadingUrl = _masterApiSetting.BaseUrl + _masterApiSetting.IntervalReadingApi + "?meterId=" + meterId + intervalPaging + "&meterReadingType=" + meterReadingType + inetrvalStart + inetrvalEnd;
+        //                    var solarMonthIntervals = await _masterApiConnectService.GetMeterReadingIntervals(solarIntervalReadingUrl).ConfigureAwait(false);
+
+        //                    solarResult.InstalledCapacity = Convert.ToDouble(installedCapacity) / 1000;
+        //                    meter.SolarData = solarResult;
+        //                    solarResult.ExportedForMonth = await GetMonthlySolarData(request.PropertyId);
+        //                    solarResult.MeterNumber = meter.MeterNumber.ToUpper();
+
+        //                }
+        //                MeterType type = meterResult.Data[0].Meter.Type;
+        //                meter.MasterMeterType = type.Name;
+        //                //if (type != null && type.Id == "STS" && type.Name == "STS Meter")
+        //                //{
+        //                //    stsData = await GetSTSTransactionsData(request.PropertyId).ConfigureAwait(false);
+        //                //    meter.STSTopUpTransactions = stsData;
+        //                //}
+        //                if (type != null && type.Id == "STS" && type.Name == "STS Meter")
+        //                {
+
+        //                    DateTime firstDateOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+
+        //                    requestSts = new SendVendSTSRequestCommand()
+        //                    {
+
+        //                        Meter = meter.MeterNumber.ToUpper(),
+        //                        FromDate = firstDateOfMonth,
+        //                        ToDate = DateTime.Now,
+        //                    };
+
+        //                    responses = (List<VendRequestResponse>)await _vendRequestHelper.ProcessSTSRequest(requestSts).ConfigureAwait(true);
+        //                    if (responses.Any())
+        //                    {
+        //                        foreach (var item in responses)
+        //                        {
+        //                            if (item.Response != null)
+        //                            {
+        //                                if (!string.IsNullOrEmpty(item.ReceiptNumber))
+        //                                {
+        //                                    var isRctNoExist = await _topUpRepository.ISRCTNoExist(item.ReceiptNumber).ConfigureAwait(false);
+        //                                    if (isRctNoExist == 0)
+        //                                    {
+        //                                        var strTransactionNumber = ChecksumHelper.GenerateTransactionNumber();
+        //                                        var meterdt = await _meterRepository.GetMeterByMeterNumber(meter.MeterNumber.ToLower()).ConfigureAwait(false);
+        //                                        var property = await _propertyRepository.GetPropertyById(meterdt.PropertyId).ConfigureAwait(false);
+        //                                        int userId = 0;
+        //                                        int stsMeterId = 0;
+        //                                        if (property != null)
+        //                                        {
+        //                                            userId = property.OwnerId;
+        //                                        }
+        //                                        if (meter != null)
+        //                                        {
+        //                                            stsMeterId = meterdt.Id;
+        //                                        }
+
+        //                                        var obj = new AddSTSTopUpHelper()
+        //                                        {
+        //                                            TransactionId = strTransactionNumber,
+        //                                            UserId = userId,
+        //                                            MeterId = stsMeterId,
+        //                                            vendResponse = item.Response,
+        //                                            StdToken = item.Token,
+        //                                            BsstToken = item.bsstToken,
+        //                                            KeyChangeToken = item.keyChangeToken,
+        //                                            CustomerMsg = item.customerMsg,
+        //                                            MrktMsg = item.mrktMsg,
+        //                                            RCTNumber = item.ReceiptNumber,
+        //                                            Message = item.Message,
+        //                                            TxnDate = item.TxnDatetime
+        //                                        };
+        //                                        await _topUpRepository.AddTopupTransactionsFromSTSResponse(obj).ConfigureAwait(false);
+        //                                        var requstdf = new DownloadPurchaceRecieptPdfQuery()
+        //                                        {
+        //                                            TransactionId = strTransactionNumber,
+        //                                        };
+
+        //                                        if (item.ReceiptNumber != "" && !string.IsNullOrEmpty(item.ReceiptNumber))
+        //                                        {
+        //                                            rctNumbers.Add(item.ReceiptNumber);
+        //                                        }
+        //                                        //await _topUpRepository.DownloadPurchaceRecieptPdfQuery(requstdf, userId).ConfigureAwait(false);
+
+        //                                    }
+        //                                    else
+        //                                    {
+        //                                        rctNumbers.Add(item.ReceiptNumber);
+        //                                    }
+        //                                }
+        //                            }
+        //                        }
+        //                    }
+        //                    resultTxn = await _topUpRepository.GetSTSTopUps(rctNumbers, requestSts.FromDate.ToUniversalTime(), requestSts.ToDate.ToUniversalTime()).ConfigureAwait(false);
+        //                    if (resultTxn.STSTopUpTransaction.Count() > 0)
+        //                    {
+        //                        stsData = resultTxn;
+        //                    }
+        //                    else
+        //                    {
+        //                        stsData = null;
+        //                    }
+        //                    if (meter != null && stsData != null)
+        //                    {
+        //                        meter.STSTopUpTransactions = stsData;
+        //                    }
+        //                }
+
+        //                if (meter != null && !meter.IsSolar)
+        //                {
+        //                    var dayIntervalReadingUrl = _masterApiSetting.BaseUrl + _masterApiSetting.IntervalReadingApi + "?meterId=" + meterId + intervalPaging + "&meterReadingType=" + meterReadingType + inetrvalStart + inetrvalEnd;
+        //                    var dayIntervals = await _masterApiConnectService.GetMeterReadingIntervals(dayIntervalReadingUrl).ConfigureAwait(false);
+
+        //                    if (dayIntervals != null)
+        //                    {
+        //                        var intervalReadings = dayIntervals.Data;
+        //                        var dailyConsumption = dayIntervals.Data.Sum(t => t.ReadingValue) / 1000;
+        //                        meter.GuageChartDto = new GuageChartDto
+        //                        {
+        //                            ActualValue = dailyConsumption,
+        //                            TargetValue = dailyTargetConsumption
+        //                        };
+        //                        meter.Consumption = dailyConsumption.ToString();
+
+        //                    }
+        //                }
+
+
+
+
+        //            }
+
+
+
+        //            result.Add(meter);
+
+
+        //        }
+        //    }
+        //    return result;
+        //}
+
+
         public async Task<IEnumerable<DashboardMeterDayConsumptionDto>> Handle(GetDashboardMeterDayConsumptionQuery request, CancellationToken cancellationToken)
         {
             var commonValidator = new GetDashboardMeterDayConsumptionQueryValidator(_propertyRepository);
@@ -164,7 +390,7 @@ namespace Ontec.Core.Application.Dashbaord.Queries
                     meter.DailyTargetConsumption = dailyTargetConsumption.ToString();
                     var meterUrl = _masterApiSetting.BaseUrl + _masterApiSetting.MeterNumberApi + "?meter.meterNum=" + meter.MeterNumber.ToUpper() + "&paging=(limit)(5)(offset)(0)";
                     var meterResult = await _masterApiConnectService.GetMeter(meterUrl).ConfigureAwait(false);
-                    if (meterResult != null)
+                    if (meterResult != null && meterResult.Data.Count() > 0)
                     {
                         var meterId = meterResult.Data[0].Meter.Id;
                         var installedCapacity = meterResult.Data[0].Meter.PowerLimit;
@@ -173,7 +399,7 @@ namespace Ontec.Core.Application.Dashbaord.Queries
                         var meterReadingType = meter.MeterReadingType;
 
                         var startDateS = startDate.ToString("yyyy-MM-dd");
-                        startDateS += "T00:00:000.000%2B0000";
+                        startDateS += "T00:00:000.000%2B0200";
 
                         var endDateS = endDate.ToString("yyyy-MM-dd");
                         endDateS += "T00:00:000.000%2B0200";
@@ -210,14 +436,14 @@ namespace Ontec.Core.Application.Dashbaord.Queries
                                 solarResult.ExportedForMonth = monthlyConsumption;
 
                                 solarResult.TodayPercentage = (solarResult.ExportedToday / Convert.ToDouble(installedCapacity)) * 100;
-                               
+
 
                             }
 
                             var solarMonthReadingUrl = _masterApiSetting.BaseUrl + _masterApiSetting.IntervalReadingApi + "?meterId=" + meterId + intervalPaging + "&meterReadingType=" + meterReadingType + inetrvalStart + inetrvalEnd;
                             var solarMonthIntervals = await _masterApiConnectService.GetMeterReadingIntervals(solarIntervalReadingUrl).ConfigureAwait(false);
 
-                            solarResult.InstalledCapacity = Convert.ToDouble(installedCapacity) / 1000;
+                            solarResult.InstalledCapacity = installedCapacity > 0 ? Convert.ToDouble(installedCapacity) / 1000 : 0;
                             meter.SolarData = solarResult;
                             solarResult.ExportedForMonth = await GetMonthlySolarData(request.PropertyId);
                             solarResult.MeterNumber = meter.MeterNumber.ToUpper();
@@ -344,8 +570,8 @@ namespace Ontec.Core.Application.Dashbaord.Queries
 
                     }
 
-                    
-                   
+
+
                     result.Add(meter);
 
 
@@ -353,8 +579,6 @@ namespace Ontec.Core.Application.Dashbaord.Queries
             }
             return result;
         }
-
-
 
         public async Task<MeterAndUserRequestDto> Handle(GetMeterAndUserRequestCount request, CancellationToken cancellationToken)
         {
@@ -429,6 +653,76 @@ namespace Ontec.Core.Application.Dashbaord.Queries
             }
             return monthlyExported;
         }
+
+
+        //private async Task<double> GetMonthlySolarData(int propertyId)
+        //{
+
+        //    var meters = await _meterRepository.GetMeterMasterByPropertyId(propertyId).ConfigureAwait(false);
+        //    var result = new List<DashboardMeterDayConsumptionDto>();
+        //    var solarResult = new SolarConsumptionDTO();
+        //    var currentMonth = DateTime.Now.Month;
+        //    var currentYear = DateTime.Now.Year;
+        //    DateTime now = DateTime.UtcNow;
+        //    var monthStartDate = new DateTime(now.Year, now.Month, 1);
+        //    var monthEndDate = monthStartDate.AddMonths(1).AddDays(-1);
+        //    double monthlyExported = 0.0;
+        //    if (meters != null)
+        //    {
+        //        foreach (var meter in meters)
+        //        {
+        //            var dailyTargetConsumption = double.Parse(meter.DailyTargetConsumption);
+
+        //            //meter.MeterNumber = "62030884";
+        //            meter.GuageChartDto = new GuageChartDto
+        //            {
+        //                ActualValue = 0,
+        //                TargetValue = dailyTargetConsumption
+        //            };
+        //            meter.DailyTargetConsumption = dailyTargetConsumption.ToString();
+        //            var meterUrl = _masterApiSetting.BaseUrl + _masterApiSetting.MeterNumberApi + "?meter.meterNum=" + meter.MeterNumber.ToUpper() + "&paging=(limit)(5)(offset)(0)";
+        //            var meterResult = await _masterApiConnectService.GetMeter(meterUrl).ConfigureAwait(false);
+        //            if (meterResult != null && meterResult.Data.Count() > 0)
+        //            {
+        //                var meterId = meterResult.Data[0].Meter.Id;
+        //                var installedCapacity = meterResult.Data[0].Meter.PowerLimit;
+        //                DateTime endDate = monthEndDate.AddDays(1);
+        //                DateTime startDate = monthStartDate;
+        //                var meterReadingType = meter.MeterReadingType;
+
+        //                var startDateS = startDate.ToString("yyyy-MM-dd");
+        //                startDateS += "T00:00:000.000%2B0200";
+
+        //                var endDateS = endDate.ToString("yyyy-MM-dd");
+        //                endDateS += "T00:00:000.000%2B0200";
+
+        //                var inetrvalStart = "&filter=(readingStart)(GTE)(" + startDateS + ")";
+        //                var inetrvalEnd = "&filter=(readingEnd)(LT)(" + endDateS + ")";
+        //                var intervalPaging = "&paging=(limit)(5000)(offset)(0)";
+        //                var monthlyConsumption = 0.0;
+        //                if (meter.IsSolar)
+        //                {
+        //                    var solarMonthReadingUrl = _masterApiSetting.BaseUrl + _masterApiSetting.IntervalReadingApi + "?meterId=" + meterId + intervalPaging + "&meterReadingType=" + meterReadingType + inetrvalStart + inetrvalEnd;
+        //                    var solarMonthIntervals = await _masterApiConnectService.GetMeterReadingIntervals(solarMonthReadingUrl).ConfigureAwait(false);
+        //                    if (solarMonthIntervals != null)
+        //                    {
+        //                        var intervalReadings = solarMonthIntervals.Data;
+        //                        var dailyConsumption = solarMonthIntervals.Data.Sum(t => t.ReadingValue) / 1000;
+        //                        meter.GuageChartDto = new GuageChartDto
+        //                        {
+        //                            ActualValue = dailyConsumption,
+        //                            TargetValue = dailyTargetConsumption
+        //                        };
+        //                        var currentMonthReadings = intervalReadings
+        //                        .Where(t => t.ReadingTimestamp.Month == currentMonth && t.ReadingTimestamp.Year == currentYear);
+        //                        monthlyExported = currentMonthReadings.Sum(t => t.ReadingValue) / 1000;
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+        //    return monthlyExported;
+        //}
         private async Task<GetSTSTopUpTransactions> GetSTSTransactionsData(int propertyId)
         {
             var requestSts = new SendVendSTSRequestCommand();
@@ -524,5 +818,8 @@ namespace Ontec.Core.Application.Dashbaord.Queries
             resultTxn = await _topUpRepository.GetSTSTopUps(rctNumbers, requestSts.FromDate.ToUniversalTime(), requestSts.ToDate.ToUniversalTime()).ConfigureAwait(false);
             return resultTxn;
         }
+
+
+
     }
 }

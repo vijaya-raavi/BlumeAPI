@@ -26,7 +26,10 @@ namespace Ontec.Core.Domain.Models.Dto.Login
         public bool IsBusiness {  get; set; }
        public string AcceptedTermConditionVersion {  get; set; }
         public string IsEstateEnable { get; set; }
+        public string Auxaccountdetails { get; set; }
         public bool IsForcedPasswordChange {  get; set; }
+
+        public int CompanyId {  get; set; }
 
     }
 }

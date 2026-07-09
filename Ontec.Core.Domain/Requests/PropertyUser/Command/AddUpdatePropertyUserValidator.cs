@@ -81,7 +81,8 @@ namespace Ontec.Core.Domain.Requests.PropertyUser.Command
                     int isPropertyUserInActive = await _propertyUserRepository.IsPropertyUserInActive(model.PropertyId, propertyUserId).ConfigureAwait(false);
                     if (isPropertyUserExist && isPropertyUserInActive == 0)
                     {
-                        context.AddFailure(nameof(AddUpdatePropertyUser.Id), string.Format(CommonConstants.AlreadyExist, nameof(AddUpdatePropertyUser.Id)));
+                        context.AddFailure(nameof(AddUpdatePropertyUser.Email), string.Format(CommonConstants.AlreadyExist, nameof(AddUpdatePropertyUser.Email)));
+                        context.AddFailure(nameof(AddUpdatePropertyUser.Mobile), string.Format(CommonConstants.AlreadyExist, nameof(AddUpdatePropertyUser.Mobile)));
                     }
 
                 }

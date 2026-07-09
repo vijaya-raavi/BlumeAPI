@@ -12,5 +12,6 @@ namespace Ontec.Core.Domain.Interface.MasterApiService
         public Task<CustomerAuxAccount> GetCustomerAuxAccount(string url);
         public Task<AccountTransactionApiModel> GetAccountTransactions(string url);
         Task<TransactionMasterApiModel> GetCustomerTransactions(string url);
+        Task<ChargeScheduleData> GetCustomerAuxChargeSchedule(string url);
     }
 }

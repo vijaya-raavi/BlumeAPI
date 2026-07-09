@@ -48,6 +48,8 @@ namespace Ontec.Core.Domain.Models.Dto.User
         public string TermsConditionsCurrentVersion { get; set; }
         public string IsWallet { get; set; }
         public string IsEstateEnable { get;set;}
+
+        public string Auxaccountdetails { get; set; }
         public bool IsForcedPasswordChange {  get; set; }
     }
 }

@@ -327,7 +327,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                                 tut.final_amount_to_pay AS FinalAmountToPay,
                                 p.name AS Property,
 								p.unit_number AS UnitNumber,
-                                e.estate As Estate,
+                                --e.estate As Estate,
                                 pm.display_name as PaymentMethod,
                                 tut.receipt_number AS ReceiptNumber,
                                 tut.is_in_house_txn AS IsInHouseTransaction ,
@@ -336,7 +336,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
 						LEFT JOIN ohd_meter AS mt ON  mt.id=tut.meter_id
                          LEFT JOIN public.ohd_property as p ON mt.property_id=p.id
                         LEFT JOIN public.ohd_user_wallet AS uw ON tut.user_id=uw.user_id
-                        LEFT JOIN public.ohd_estate as e ON p.estate_id=e.id
+                        --LEFT JOIN public.ohd_estate as e ON p.estate_id=e.id
                         LEFT JOIN public.ohd_payment_methods as pm ON tut.payment_method_id=pm.id
                         WHERE tut.vend_response is not null";
 
@@ -372,7 +372,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                     var fullSearchTextParam = "@SearchTextFull";
                     searchConditions.Add($@"(lower(p.name) like {fullSearchTextParam}
                            OR lower(p.unit_number) like {fullSearchTextParam}
-                            OR lower(e.estate) like {fullSearchTextParam}
+                          --  OR lower(e.estate) like {fullSearchTextParam}
                             OR lower(mt.meter_number) like {fullSearchTextParam}
                            )");
                     parameters.Add(fullSearchTextParam, "%" + searchText.ToLower() + "%");
@@ -384,7 +384,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                         var paramName = "@SearchText" + index;
                         searchConditions.Add($@"(lower(p.name) like {paramName}
                                OR lower(p.unit_number) like {paramName}
-                                OR lower(e.estate) like {paramName}
+                             --   OR lower(e.estate) like {paramName}
                                 OR lower(mt.meter_number) like {paramName}
                            )");
                         parameters.Add(paramName, "%" + term + "%");
@@ -533,13 +533,13 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                                 ,to_char(ttd.created_at,'dd-MM-yyyy  HH24:MI:ss') AS Date
                                   ,ttd.topup_status AS TopupStatus
                                 ,pm.display_name AS Mode
-                                , e.estate As Estate
+                               -- , e.estate As Estate
                                 ,ttd.is_in_house_txn AS IsInHouseTransaction 
                                   , ttd.eft_ref_no AS EFTRefNo
 	                                FROM public.ohd_top_up_transactions as ttd
 	                                join public.ohd_meter AS mt on ttd.meter_id=mt.id
 									LEFT JOIN public.ohd_property AS p on mt.property_id=p.id
-                                     LEFT JOIN public.ohd_estate as e ON p.estate_id=e.id
+                                    -- LEFT JOIN public.ohd_estate as e ON p.estate_id=e.id
 									LEFT JOIN public.ohd_enum_meter_type AS emt ON emt.id=mt.meter_type_id
  	                                LEFT JOIN (Select epur.name,pur.property_id,pur.user_id from public.ohd_property_user_relation as pur
 	                                LEFT JOIN public.ohd_enum_user_relation as epur on pur.user_relation_id=epur.id
@@ -573,7 +573,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                            OR lower(ur.mobile) like {fullSearchTextParam}
                            OR lower(ur.email) like {fullSearchTextParam}
                             OR lower(mt.meter_number) like {fullSearchTextParam}
-                            OR lower(e.estate ) like {fullSearchTextParam}
+                           -- OR lower(e.estate ) like {fullSearchTextParam}
                            )");
                     parameters.Add(fullSearchTextParam, "%" + searchText.ToLower() + "%");
 
@@ -589,7 +589,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                                OR lower(ur.mobile) like {paramName}
                                OR lower(ur.email) like {paramName}
                                 OR lower(mt.meter_number) like {paramName}
-                                    OR lower(e.estate ) like {paramName}
+                                  --  OR lower(e.estate ) like {paramName}
                                 )");
                         parameters.Add(paramName, "%" + term + "%");
                         index++;
@@ -865,6 +865,29 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
             return paymentMethods;
 
         }
+
+
+        public async Task<IEnumerable<PaymentMethodsDto>> GetAllPaymentMethods()
+        {
+            var sQuery = @"SELECT id As Id,
+                                name as Name,
+                                display_name AS DisplayName,
+                                slug As Slug,
+                                 lekkaPay_slug AS LekkaPaySlug,
+                                percentage As Percentage, 
+                                discount As Discount, 
+                                CASE WHEN status_id =1 THEN true ELSE false END As StatusId,  
+                                create_at As CreatedAt, 
+                                modified_at As ModifiedAt, 
+                                modifed_by As ModifiedBy
+                                FROM public.ohd_payment_methods";
+
+            var parameters = new DynamicParameters();
+           
+            var paymentMethods = await _genericRepository.GetAsync<PaymentMethodsDto>(sQuery, parameters).ConfigureAwait(false);
+            return paymentMethods;
+
+        }
         public async Task<IEnumerable<PaymentMethodsDto>> GetDebitechPaymentMethods(GetPaymentMethodsQuery request)
         {
             var sQuery = @"SELECT id As Id,
@@ -1020,7 +1043,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
         }
         #endregion
         #region PaymentDashboard
-        public async Task<PaymentDashboardDto> GetPaymentDashboard(int estateId)
+        public async Task<PaymentDashboardDto> GetPaymentDashboard()
         {
             PaymentDashboardDto dashboardDto = new();
             var totalTopUpAmountQuery = "";
@@ -1032,38 +1055,37 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
             var UtilityWiseTopUpCountQuery = "";
             try
             {
-                if (estateId == 0)
-                {
-                    totalPropertyQuery = @"SELECT COUNT(id)
+
+                totalPropertyQuery = @"SELECT COUNT(id)
                                    FROM ohd_property
                                    WHERE status_id=@Active";
 
-                    totalActiveMeterQuery = @"SELECT COUNT(m.ID)
+                totalActiveMeterQuery = @"SELECT COUNT(m.ID)
                                         FROM ohd_meter as m 
                                         LEFT JOIN ohd_property as p on m.property_id=p.id
                                         WHERE m.status_id =@Active";
 
-                    totalMeterQuery = @"SELECT COUNT(m.ID)
+                totalMeterQuery = @"SELECT COUNT(m.ID)
                                         FROM ohd_meter as m 
                                         LEFT JOIN ohd_property as p on m.property_id=p.id";
 
-                    totalConsumerQuery = @"SELECT COUNT(id)
+                totalConsumerQuery = @"SELECT COUNT(id)
                                    FROM ohd_user
                                    WHERE status_id=@Active AND role_id=@Consumer;";
 
-                    topUpCountquery = @"SELECT COUNT(tut.id)FROM
+                topUpCountquery = @"SELECT COUNT(tut.id)FROM
                                     public.ohd_top_up_transactions as tut
                                     LEFT JOIN ohd_meter as m on tut.meter_id=m.id
                                     WHERE tut.flag=@Complete AND  tut.vend_response is not null
 									    and tut.topup_status='VendSuccess'";
 
-                    totalTopUpAmountQuery = @"SELECT SUM(tut.amount)FROM 
+                totalTopUpAmountQuery = @"SELECT SUM(tut.amount)FROM 
                                     public.ohd_top_up_transactions as tut
                                     LEFT JOIN ohd_meter as m on tut.meter_id=m.id                                    
                                    WHERE tut.flag=@Complete AND  tut.vend_response is not null
 									    and tut.topup_status='VendSuccess'";
 
-                    UtilityWiseTopUpCountQuery = @"WITH last_week AS
+                UtilityWiseTopUpCountQuery = @"WITH last_week AS
                                         (
                                            SELECT emt.id AS meter_type_id,
                                                    emt.name AS MeterType, 
@@ -1117,131 +1139,13 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                                        LEFT JOIN  last_month lm ON lw.meter_type_id = lm.meter_type_id
                                        LEFT JOIN last_year ly ON lw.meter_type_id = ly.meter_type_id
                                        ORDER BY lw.MeterType";
-                }
-                if (estateId > 0)
-                {
-                    totalPropertyQuery = @"SELECT COUNT(id)
-                                   FROM ohd_property
-                                   WHERE status_id=@Active AND estate_id=@EstateId;";
 
-                    totalActiveMeterQuery = @"SELECT COUNT(m.ID)
-                                        FROM ohd_meter as m 
-                                        LEFT JOIN ohd_property as p on m.property_id=p.id
-                                        WHERE m.status_id =@Active AND p.estate_id=@EstateId";
-
-                    totalMeterQuery = @"SELECT COUNT(m.ID)
-                                        FROM ohd_meter as m 
-                                        LEFT JOIN ohd_property as p on m.property_id=p.id
-                                        WHERE p.estate_id=@EstateId";
-
-                    totalConsumerQuery = @"SELECT COUNT(u.id)
-                                        FROM ohd_user as u
-                                        LEFT JOIN ohd_property as p on  u.id=p.owner_id
-                                        WHERE u.status_id=@Active AND role_id=@Consumer AND p.estate_id=@EstateId";
-
-                    topUpCountquery = @"SELECT COUNT(tut.id)FROM
-                                    public.ohd_top_up_transactions as tut
-                                    LEFT JOIN ohd_meter as m on tut.meter_id=m.id
-                                    LEFT JOIN ohd_property as p on m.property_id=p.id
-                                     WHERE tut.flag=@Complete AND  tut.vend_response is not null
-									    and tut.topup_status='VendSuccess' AND p.estate_id=@EstateId";
-
-                    totalTopUpAmountQuery += @"SELECT SUM(tut.amount)FROM  public.ohd_top_up_transactions as tut  
-                                                LEFT JOIN ohd_meter as m on tut.meter_id=m.id
-                                                LEFT JOIN ohd_property as p on m.property_id=p.id
-                                                WHERE tut.flag=@Complete AND  tut.vend_response is not null
-									    and tut.topup_status='VendSuccess' AND p.estate_id=@EstateId";
-
-
-                    UtilityWiseTopUpCountQuery = @"WITH last_week AS (
-                                                    SELECT 
-                                                        emt.id AS meter_type_id,
-                                                        emt.name AS MeterType, 
-                                                        COALESCE(SUM(
-                                                            CASE 
-                                                                WHEN p.estate_id = @EstateId 
-                                                                     AND tut.flag=@Complete AND  tut.vend_response is not null
-									                                    and tut.topup_status='VendSuccess'
-                                                                     AND tut.created_at BETWEEN 
-                                                                         (CURRENT_DATE - EXTRACT(DOW FROM CURRENT_DATE)::INTEGER - 7)
-                                                                         AND 
-                                                                         (CURRENT_DATE - EXTRACT(DOW FROM CURRENT_DATE)::INTEGER - 1)
-                                                                THEN tut.amount 
-                                                                ELSE 0
-                                                            END
-                                                        ), 0)::numeric AS LastWeek
-                                                    FROM public.ohd_enum_meter_type AS emt
-                                                    LEFT JOIN public.ohd_meter AS mt ON mt.meter_type_id = emt.id
-                                                    LEFT JOIN public.ohd_property AS p ON p.id = mt.property_id
-                                                    LEFT JOIN public.ohd_top_up_transactions AS tut ON tut.meter_id = mt.id
-                                                    GROUP BY emt.id, emt.name
-                                                ),
-
-                                                last_month AS (
-                                                    SELECT 
-                                                        emt.id AS meter_type_id,
-                                                        emt.name AS MeterType, 
-                                                        COALESCE(SUM(
-                                                            CASE 
-                                                                WHEN p.estate_id = @EstateId 
-                                                                     AND tut.flag=@Complete AND  tut.vend_response is not null
-									                                and tut.topup_status='VendSuccess'
-                                                                     AND tut.created_at BETWEEN 
-                                                                         DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') 
-                                                                         AND 
-                                                                         (DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 day')
-                                                                THEN tut.amount 
-                                                                ELSE 0
-                                                            END
-                                                        ), 0)::numeric AS LastMonth
-                                                    FROM public.ohd_enum_meter_type AS emt
-                                                    LEFT JOIN public.ohd_meter AS mt ON mt.meter_type_id = emt.id
-                                                    LEFT JOIN public.ohd_property AS p ON p.id = mt.property_id
-                                                    LEFT JOIN public.ohd_top_up_transactions AS tut ON tut.meter_id = mt.id
-                                                    GROUP BY emt.id, emt.name
-                                                ),
-
-                                                last_year AS (
-                                                    SELECT 
-                                                        emt.id AS meter_type_id,
-                                                        emt.name AS MeterType, 
-                                                        COALESCE(SUM(
-                                                            CASE 
-                                                                WHEN p.estate_id = @EstateId 
-                                                                     AND tut.flag=@Complete AND  tut.vend_response is not null
-									                                and tut.topup_status='VendSuccess'
-                                                                     AND tut.created_at BETWEEN 
-                                                                         DATE_TRUNC('year', CURRENT_DATE - INTERVAL '1 year') 
-                                                                         AND 
-                                                                         (DATE_TRUNC('year', CURRENT_DATE) - INTERVAL '1 day')
-                                                                THEN tut.amount 
-                                                                ELSE 0
-                                                            END
-                                                        ), 0)::numeric AS LastYear
-                                                    FROM public.ohd_enum_meter_type AS emt
-                                                    LEFT JOIN public.ohd_meter AS mt ON mt.meter_type_id = emt.id
-                                                    LEFT JOIN public.ohd_property AS p ON p.id = mt.property_id
-                                                    LEFT JOIN public.ohd_top_up_transactions AS tut ON tut.meter_id = mt.id
-                                                    GROUP BY emt.id, emt.name
-                                                )
-                                                SELECT 
-                                                    lw.MeterType,
-                                                    lw.LastWeek AS LastWeekAmount,
-                                                    lm.LastMonth AS LastMonthAmount,
-                                                    ly.LastYear AS LastYearAmount
-                                                FROM last_week lw
-                                                LEFT JOIN last_month lm ON lw.meter_type_id = lm.meter_type_id
-                                                LEFT JOIN last_year ly ON lw.meter_type_id = ly.meter_type_id
-                                                ORDER BY lw.MeterType;";
-
-                }
 
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@Complete", (int)PaymentStatus.Complete);
                 parameters.Add("@Active", (int)StatusEnum.Active);
                 parameters.Add("@Consumer", (int)RoleMasterEnum.Customer);
-                parameters.Add("@EstateId", estateId);
 
 
                 var totalProperty = _genericRepository.ExecuteScalarAsync<int>(totalPropertyQuery, parameters);
@@ -2346,6 +2250,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                     {
                         decimal debtAmount = 0;
                         decimal debtTax = 0;
+                        decimal debtremainingBalance = 0;
                         int debtCount = (Int32)jsonObject["ipayMsg"]["elecMsg"]["vendRes"]["debt"].Count();
 
                         if (debtCount != 8)
@@ -2369,7 +2274,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                                         debtAmount = Math.Round(debtAmount / 100, 2);
                                         debtTax = Convert.ToDecimal(tax);
                                         debtTax = Math.Round(debtTax / 100, 2);
-                                        decimal debtremainingBalance = Convert.ToDecimal(remainingBalance);
+                                        debtremainingBalance = Convert.ToDecimal(remainingBalance);
                                         debtremainingBalance = Math.Round(debtremainingBalance / 100, 2);
 
                                         // htmlContent += @"<div style='padding: 20px; border: 1px solid #ccc;'>";
@@ -2424,7 +2329,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                             debtAmount = Math.Round(debtAmount / 100, 2);
                             debtTax = Convert.ToDecimal(tax);
                             debtTax = Math.Round(debtTax / 100, 2);
-                            decimal debtremainingBalance = Convert.ToDecimal(remainingBalance);
+                            debtremainingBalance = Convert.ToDecimal(remainingBalance);
                             debtremainingBalance = Math.Round(debtremainingBalance / 100, 2);
 
 
@@ -3572,6 +3477,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                 htmlTemplate = await File.ReadAllTextAsync(templatePath);
                 var debts = new List<DebtItem>();
                 var fixedItems = new List<FixedItem>();
+                decimal debtremainingBalance = 0;
                 if (receiptDto.VendResponse != null)
                 {
                     JObject jsonObject = JObject.Parse(receiptDto.VendResponse);
@@ -3605,7 +3511,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                                         debtAmount = Math.Round(debtAmount / 100, 2);
                                         debtTax = Convert.ToDecimal(tax);
                                         debtTax = Math.Round(debtTax / 100, 2);
-                                        decimal debtremainingBalance = Convert.ToDecimal(remainingBalance);
+                                        debtremainingBalance = Convert.ToDecimal(remainingBalance);
                                         debtremainingBalance = Math.Round(debtremainingBalance / 100, 2);
                                         debts.Add(new DebtItem
                                         {
@@ -3634,7 +3540,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                             debtAmount = Math.Round(debtAmount / 100, 2);
                             debtTax = Convert.ToDecimal(tax);
                             debtTax = Math.Round(debtTax / 100, 2);
-                            decimal debtremainingBalance = Convert.ToDecimal(remainingBalance);
+                            debtremainingBalance = Convert.ToDecimal(remainingBalance);
                             debtremainingBalance = Math.Round(debtremainingBalance / 100, 2);
 
                             debts.Add(new DebtItem
@@ -3825,7 +3731,8 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                     CustomerMessage = receiptDto.CustomerMessage,
                     DebtItems = debts,
                     FixedItems = fixedItems,
-                    TransactionFee = receiptDto.TransactionFee
+                    TransactionFee = receiptDto.TransactionFee,
+
 
                 };
                 if (!string.IsNullOrEmpty(tariff))
@@ -3840,13 +3747,12 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                 model.ShowKeyChange = !string.IsNullOrEmpty(model.KeyChangeToken);
                 model.ShowTaxDetails = !string.IsNullOrEmpty(model.TaxNumber) && model.TaxNumber.ToLower() != ("undefined");
                 model.ShowCustomerMessage = !string.IsNullOrEmpty(model.CustomerMessage);
-
+                model.ShowBsstToken = !string.IsNullOrEmpty(resultBsstToken.ToString());
                 model.ShowTokenDetails = !string.IsNullOrEmpty(model.TokenTech);
                 model.ShowStdToken = !string.IsNullOrEmpty(model.StandardTokens);
-                //if (model.TransactionFee > 0)
-                //{
-                //    model.ShowTxnFee = true;
-                //}
+
+                model.ShowTxnFee = true;
+
                 //var template = Template.Parse(topupTemplate.Html);
                 //topup.Html = template.Render(model, memberRenamer: member => member.Name);
 
@@ -3898,6 +3804,395 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                 throw ex;
             }
             return response;
+        }
+
+        public async Task<Dictionary<string, TransactionNoFeeFromRctNumDto>> GetTransactionFeesByReceiptNumbers(List<string> receiptNumbers)
+        {
+            const string query = @"  SELECT
+                                    receipt_number,
+                                    transaction_fee,
+                                    transaction_id
+                                    FROM public.ohd_top_up_transactions
+                                   WHERE receipt_number = ANY(@ReceiptNumbers)";
+
+
+            var result = await _genericRepository.GetAsync<TransactionNoFeeFromRctNumDto>(query,
+                        new
+                        {
+                            ReceiptNumbers = receiptNumbers.ToArray()
+                        });
+
+            return result.ToDictionary(x => x.receipt_number, x => x);
+        }
+        public async Task DeleteDebitechDuplicateNotifyRequest(int id)
+        {
+            var sQuery = @"DELETE FROM public.ohd_debitech_notify_requests(
+                            WHERE id=@Id";
+            var parameters = new DynamicParameters();
+            parameters.Add("@Id", id);
+
+            try
+            {
+                var result = await _genericRepository.ExecuteScalarAsync(sQuery, parameters).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+            }
+        }
+        public async Task<int> SaveCredits(CaptureUsersCreditsToSaveCommandReuqest request, string imagePath, int imgCount)
+        {
+            var sQuery = @"INSERT INTO public.ohd_user_credits
+                            (
+                            credit,
+                            user_id,
+                            meter_id,
+                            image_path_1,
+                            image_path_1_date,
+                            created_at,
+                            image_count)
+                            VALUES 
+                            (@Credit,
+                             @UserId, 
+                             @MeterId,
+                             @ImagePath, 
+                             @ImagePath1,
+                             @CreatedAt,
+                             @ImageCount
+                             )RETURNING id;";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@Credit", request.Amount);
+            parameters.Add("@UserId", request.UserId);
+            parameters.Add("@MeterId", request.MeterId);
+            parameters.Add("@ImagePath", imagePath);
+            parameters.Add("@CreatedAt", DateTime.UtcNow);
+            parameters.Add("@ImagePath1", DateTime.UtcNow);
+            parameters.Add("@ImageCount", imgCount);
+
+            try
+            {
+                var result = await _genericRepository.ExecuteScalarAsync<int>(sQuery, parameters).ConfigureAwait(false);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return 0;
+            }
+
+        }
+
+        public async Task<int> UpdateCreditImages(string imagePath, string columnName, int imageCount, int id)
+        {
+            var sQuery = @"UPDATE  public.ohd_user_credits
+                            SET
+                            @ColumnName=@ImagePath,
+                            modified_at=@ModifiedAt,
+                            image_count=@ImageCount
+                            WHERE id=@Id 
+                            RETURNING id;";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@ColumnName", columnName);
+            parameters.Add("@ImagePath", imagePath);
+            parameters.Add("@ModifiedAt", DateTime.UtcNow);
+            parameters.Add("@Id", id);
+
+            try
+            {
+                var result = await _genericRepository.ExecuteScalarAsync<int>(sQuery, parameters).ConfigureAwait(false);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return 0;
+            }
+
+        }
+
+        public async Task<CreditImageDto> GetCreditsId(int meterId, int userId)
+        {
+            var sQuery = @"SELECT id AS Id,image_count AS ImageCount 
+                           FROM public.ohd_user_credits
+                           WHERE meter_id=@MeterId AND user_id=@UserId";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@UserId", userId);
+            parameters.Add("@MeterId", meterId);
+
+            try
+            {
+                var result = await _genericRepository.GetFirstOrDefaultAsync<CreditImageDto>(sQuery, parameters).ConfigureAwait(false);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return new CreditImageDto();
+            }
+
+        }
+
+        public async Task<CreditImagesRawDto> GetCreditImageValues(int meterId, int userId)
+        {
+            var sQuery = @"SELECT image_path_1 AS Image_Path_1,
+                                image_path_2 AS Image_Path_2,
+                                image_path_3 AS Image_Path_3,
+                                image_path_4 AS Image_Path_4,
+                               image_path_5 AS Image_Path_5,
+                               image_path_6 AS Image_Path_6
+                           FROM public.ohd_user_credits
+                           WHERE meter_id=@MeterId AND user_id=@UserId";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@UserId", userId);
+            parameters.Add("@MeterId", meterId);
+
+            try
+            {
+                var result = await _genericRepository.GetFirstOrDefaultAsync<CreditImagesRawDto>(sQuery, parameters);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return new CreditImagesRawDto();
+            }
+
+        }
+
+        public async Task<int> UpdateAllImages(long id, string img1, string img2, string img3, string img4, string img5, string img6, int count)
+        {
+            var query = @" UPDATE public.ohd_user_credits
+                            SET 
+                                image_path_1 = @Img1,
+                                image_path_2 = @Img2,
+                                image_path_3 = @Img3,
+                                image_path_4 = @Img4,
+                                image_path_5 = @Img5,
+                                image_path_6 = @Img6,
+                                image_count  = @Count,
+                                modified_at  = @ModifiedAt
+                            WHERE id = @Id
+                            RETURNING id;";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@Id", id);
+            parameters.Add("@Img1", img1);
+            parameters.Add("@Img2", img2);
+            parameters.Add("@Img3", img3);
+            parameters.Add("@Img4", img4);
+            parameters.Add("@Img5", img5);
+            parameters.Add("@Img6", img6);
+            parameters.Add("@Count", Math.Min(count, 6));
+            parameters.Add("@ModifiedAt", DateTime.UtcNow);
+
+            return await _genericRepository.ExecuteScalarAsync<int>(query, parameters).ConfigureAwait(false);
+        }
+
+
+        public async Task<int> SaveCreditImage(CaptureUsersCreditsToSaveCommandReuqest request, string imageUrl)
+        {
+
+            var query = @"WITH deleted AS (
+                            DELETE FROM public.ohd_user_credit_images
+                            WHERE id = (
+                                SELECT id
+                                FROM public.ohd_user_credit_images
+                                WHERE meter_id = @MeterId AND user_id = @UserId
+                                ORDER BY credit_image_id ASC
+                                LIMIT 1
+                            )
+                            AND (
+                                SELECT COUNT(*) 
+                                FROM public.ohd_user_credit_images 
+                                WHERE meter_id = @MeterId AND user_id = @UserId
+                            ) = 6
+                            RETURNING *
+                        ),
+
+                        shifted AS (
+                            UPDATE public.ohd_user_credit_images
+                            SET credit_image_id = credit_image_id - 1,
+                                modified_at = NOW()
+                            WHERE meter_id = @MeterId AND user_id = @UserId
+                            AND EXISTS (SELECT 1 FROM deleted)
+                            RETURNING *
+                        )
+
+                        INSERT INTO public.ohd_user_credit_images
+                        (
+                            meter_id,
+                            credit_image_id,
+                            image_url,
+                            credit,
+                            user_id,
+                            created_at
+                        )
+                        VALUES
+                        (
+                            @MeterId,
+                            (
+                                SELECT COALESCE(MAX(credit_image_id), 0) + 1
+                                FROM public.ohd_user_credit_images
+                                WHERE meter_id = @MeterId AND user_id = @UserId
+                            ),
+                            @ImageUrl,
+                            @Credit,
+                            @UserId,
+                            NOW()
+                        )
+                        RETURNING id;";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@MeterId", request.MeterId);
+            parameters.Add("@UserId", request.UserId);
+            parameters.Add("@ImageUrl", imageUrl);
+            parameters.Add("@Credit", request.Amount);
+
+            return await _genericRepository.ExecuteScalarAsync<int>(query, parameters);
+        }
+        public async Task<List<UserCreditImageDto>> GetUserImages(long meterId)
+        {
+            var query = @"
+                            SELECT 
+                                c.id AS Id,
+                                c.credit_image_id AS CreditImageId,
+                                c.credit AS Credit,
+                                e.name AS Name,
+                                e.display_name AS DisplayName,
+                                c.image_url AS ImageUrl,
+                                c.created_at AS CreatedAt,
+                                c.modified_at AS ModifiedAt,
+                                c.user_id AS UserId
+                            FROM public.ohd_user_credit_images c
+                            LEFT JOIN public.ohd_enum_credit_images e 
+                                ON c.credit_image_id = e.id
+                            WHERE c.meter_id = @MeterId
+                            ORDER BY c.credit_image_id desc;";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@MeterId", meterId);
+
+            var result = await _genericRepository.GetAsync<UserCreditImageDto>(query, parameters);
+
+
+            return result.ToList();
+        }
+        public async Task<DatatableModel<GetTopUpTransaction>> GetTrailVendSuccessTopupTransactions(GetUserPayamenstQuery request)
+        {
+            string whereclause = "";
+            var dt = new DatatableModel<GetTopUpTransaction>()
+            {
+                Page = request.Page,
+                PageSize = request.PageSize
+            };
+            try
+            {
+                var sQuery = @"SELECT   concat(u.first_name,' ',u.last_name) AS Consumer,
+                                tut.transaction_id AS TransactionId,
+                                 u.Email AS Email,
+                                u.Mobile As Phone,
+                               mt.meter_number AS MeterNumber,  
+                                tut.amount AS Amount, 
+                                tut.user_id As UserId, 
+                                tut.use_wallet AS UseWallet, 
+                                tut.meter_id AS MeterId, 
+                                tut.transaction_fee AS TransactionFee, 
+                               -- (tut.recharge_amount-debt_amount) AS RechargeAmount,
+                                tut.recharge_amount AS RechargeAmount,
+                                tut.debt_amount as DebtAmount,                                
+                               to_char(tut.created_at,'dd-MM-yyyy  HH24:MI:ss') AS   CreatedAt, 
+                                tut.modified_at AS ModifiedAt,                                 
+                                tut.pf_response AS PayFastResponse,
+                               tut.topup_status AS TopupStatus,
+							   tut.trial_vend_response AS TrailVendResponse,
+                               tut.vend_response AS VendResponse,
+                               tut.std_token AS StdToken,
+                                tut.bsst_token AS BsstToken,
+                                tut.key_change_token AS KeyChangeToken,
+                                uw.balance AS WalletBalance,
+                                tut.wallet_amount_used As WalletAmountUsed,
+                                tut.final_amount_to_pay AS FinalAmountToPay,
+                                p.name AS Property,
+								p.unit_number AS UnitNumber,
+                                e.estate As Estate,
+                                pm.display_name as PaymentMethod,
+                                tut.receipt_number AS ReceiptNumber,
+                                tut.is_in_house_txn AS IsInHouseTransaction ,
+                                tut.eft_ref_no AS EFTRefNo,
+                                tut.payment_gateway AS PaymentGateWay
+	                    FROM public.ohd_top_up_transactions as tut
+						LEFT JOIN ohd_user u ON tut.user_id=u.id 
+						LEFT JOIN ohd_meter AS mt ON  mt.id=tut.meter_id
+                         LEFT JOIN public.ohd_property as p ON mt.property_id=p.id
+                        LEFT JOIN public.ohd_user_wallet AS uw ON tut.user_id=uw.user_id
+                        LEFT JOIN public.ohd_estate as e ON p.estate_id=e.id
+                        LEFT JOIN public.ohd_payment_methods as pm ON tut.payment_method_id=pm.id
+                        WHERE tut.topup_status is not null
+						AND  tut.topup_status='TrailVendSuccess'
+						AND FLAG=@Flag AND vend_response IS NULL
+						AND pf_response IS NULL";
+
+                var parameters = new DynamicParameters();
+                parameters.Add("@Flag", (int)PaymentStatus.Complete);
+
+
+                if (!string.IsNullOrEmpty(request.SearchText))
+                {
+                    var searchText = request.SearchText.Trim();
+                    var searchTerms = searchText.ToLower().Split(' ');
+                    var searchConditions = new List<string>();
+                    var index = 0;
+
+                    // Add condition for the full search text
+                    var fullSearchTextParam = "@SearchTextFull";
+                    searchConditions.Add($@"(lower(tut.transaction_id) like {fullSearchTextParam}
+                            OR lower(u.first_name) like {fullSearchTextParam}
+                                        OR lower(u.last_name) like {fullSearchTextParam}
+                                        OR lower(u.email) like {fullSearchTextParam}
+                                         OR lower(u.mobile) like {fullSearchTextParam}
+                            OR lower(mt.meter_number) like {fullSearchTextParam}
+                           )");
+                    parameters.Add(fullSearchTextParam, "%" + searchText.ToLower() + "%");
+
+
+                    // Add conditions for each split term
+                    foreach (var term in searchTerms)
+                    {
+                        var paramName = "@SearchText" + index;
+                        searchConditions.Add($@"(lower(tut.transaction_id) like {paramName}
+                                        OR lower(u.first_name) like {paramName}
+                                        OR lower(u.last_name) like {paramName}
+                                        OR lower(u.email) like {paramName}
+                                         OR lower(u.mobile) like {paramName}
+                               OR lower(mt.meter_number) like {paramName}
+                           )");
+                        parameters.Add(paramName, "%" + term + "%");
+                        index++;
+                    }
+
+
+                    if (whereclause != "" && searchConditions.Any())
+                    {
+                        whereclause += " AND (" + string.Join(" OR ", searchConditions) + ")";
+                    }
+                    if (whereclause == "" && searchConditions.Any())
+                    {
+                        whereclause += " WHERE (" + string.Join(" OR ", searchConditions) + ")";
+                    }
+
+                }
+                sQuery += whereclause;
+                sQuery += " Order By tut.id desc";
+                var topuptransactions = await _genericRepository.GetAsync<GetTopUpTransaction>(sQuery, parameters).ConfigureAwait(false);
+                var result = topuptransactions.ToList().Skip(request.Page * request.PageSize).Take(request.PageSize);
+                dt.Data = result.ToList();
+                dt.TotalRecords = topuptransactions.Count();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.ToString());
+            }
+
+            return dt;
         }
     }
 }

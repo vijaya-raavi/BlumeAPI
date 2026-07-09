@@ -85,7 +85,10 @@ namespace Ontec.Core.Application.Operator.Command
 
                         };
 
-                        var settingsIds = await _permissionRepository.GetRoleMaster();
+                        //var settingsIds = await _permissionRepository.GetSettingTypeaster();
+                        var settingsIds = (await _permissionRepository.GetSettingTypeaster())
+                                         .Where(x => !string.Equals(x.SettingType, "Configuration", StringComparison.OrdinalIgnoreCase))
+                                         .ToList();
                         var settingIdList = settingsIds.ToList();
 
                         var managePermission = new ManagePermissionQuery
@@ -95,6 +98,7 @@ namespace Ontec.Core.Application.Operator.Command
 
                         foreach (var settingId in settingIdList) // Iterate over each setting type.
                         {
+                           
                             var permission = new ManagePermissionQuery.Permission
                             {
                                 RoleId = (int)RoleMasterEnum.Operator,

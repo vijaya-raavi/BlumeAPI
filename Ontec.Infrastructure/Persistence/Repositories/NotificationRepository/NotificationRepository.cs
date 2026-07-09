@@ -852,6 +852,21 @@ namespace Ontec.Infrastructure.Persistence.Repositories.NotificationRepository
 
             return await _genericRepository.ExecuteScalarAsync<string>(sQuery, parameters).ConfigureAwait(false);
         }
+        public async Task<IEnumerable<GroupLinkingDto>> GetConsumerWiseGroupLinking(int id)
+        {
+            var sQuery = @"SELECT id AS Id,
+                                group_id AS GroupId,
+                                customer_id AS ConsumerId
+                                FROM public.ohd_notification_custome_group_linking 
+                                WHERE customer_id=@Id
+                                AND status_id=@Active";
+            var parameters = new DynamicParameters();
+            parameters.Add("@Id", id);
+            parameters.Add("@Active", (int)StatusEnum.Active);
+
+
+            return await _genericRepository.GetAsync<GroupLinkingDto>(sQuery, parameters).ConfigureAwait(false);
+        }
     }
 }
 

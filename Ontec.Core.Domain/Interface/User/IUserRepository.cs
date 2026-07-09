@@ -1,7 +1,9 @@
 ﻿using Ontec.Core.Domain.Models;
 using Ontec.Core.Domain.Models.Dto;
+using Ontec.Core.Domain.Models.Dto.Biometric;
 using Ontec.Core.Domain.Models.Dto.Login;
 using Ontec.Core.Domain.Models.Dto.User;
+using Ontec.Core.Domain.Requests.BiometricVerification.Command;
 using Ontec.Core.Domain.Requests.Login.Command;
 using Ontec.Core.Domain.Requests.Login.Queries;
 using Ontec.Core.Domain.Requests.Operator.Command;
@@ -102,5 +104,11 @@ namespace Ontec.Core.Domain.Interface.User
         Task<IEnumerable<DeviceTokensDto>> GetDeviceTokens();
         Task<int> GetUserRoleByEmailMobile(string emailMobile, int companyId);
         Task<IEnumerable<int>> GetActiveUserIds(List<int> userIds);
+        Task<int> IsBiometricExist(int userId, string deviceToken);
+        Task<int> UpdateBiometric(int id, string key);
+        Task<int> RegisterBiometric(RegisterBiometricRequest request);
+        Task<UserBiometric> GetUserBiometricByDeviceIdUserId(string deviceId, int userId);
+        Task<LoginResult> IsBiometricUserExist(GetUserByEmailQuery model);
+        Task DeleteUserPermanentById(int userId);
     }
 }

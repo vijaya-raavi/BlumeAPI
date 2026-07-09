@@ -1,14 +1,18 @@
-﻿using MediatR;
+﻿using FluentValidation.Results;
+using MediatR;
 using Ontec.Core.Application.Common.Exceptions;
+using Ontec.Core.Domain.Common;
 using Ontec.Core.Domain.Common.Helper;
 using Ontec.Core.Domain.Enums;
 using Ontec.Core.Domain.Extension;
 using Ontec.Core.Domain.Interface.Common;
 using Ontec.Core.Domain.Interface.Company;
+using Ontec.Core.Domain.Interface.MasterApiService;
 using Ontec.Core.Domain.Interface.Notifiation;
 using Ontec.Core.Domain.Interface.Property;
 using Ontec.Core.Domain.Interface.User;
 using Ontec.Core.Domain.Models.Dto.Common;
+using Ontec.Core.Domain.Models.Dto.Property;
 using Ontec.Core.Domain.Requests.Notification.Command;
 using Ontec.Core.Domain.Requests.Property.Command;
 using Ontec.Core.Domain.Requests.Property.Handler;
@@ -25,12 +29,16 @@ namespace Ontec.Core.Application.Property.Handler.Command
         private readonly IUserRepository _userRepository;
         private readonly INotificationRepository _notificationRepository;
         private readonly IAuditTrail _auditTrail;
+        private readonly IMasterApiConnectService _masterApiConnectService;
+        private readonly MasterApiSetting _masterApiSetting;
         public PropertyCommandHandler(IPropertyRepository propertyRepository
                                      , IWorkContext workContext
                                      , ICompanyRepository companyRepository
                                       , IUserRepository userRepository
-                                    , INotificationRepository notificationRepository,
-IAuditTrail auditTrail)
+                                    , INotificationRepository notificationRepository
+                                    , IAuditTrail auditTrail
+                                    , IMasterApiConnectService masterApiConnectService
+                                    , MasterApiSetting masterApiSetting)
         {
             _propertyRepository = propertyRepository;
             _workContext = workContext;
@@ -38,6 +46,8 @@ IAuditTrail auditTrail)
             _userRepository = userRepository;
             _notificationRepository = notificationRepository;
             _auditTrail = auditTrail;
+            _masterApiConnectService = masterApiConnectService;
+            _masterApiSetting = masterApiSetting;
         }
         public async Task<AddUpdateResultDto> Handle(AddOrUpdatePropertyQuery request, CancellationToken cancellationToken)
         {
@@ -67,10 +77,6 @@ IAuditTrail auditTrail)
                 property.CompanyId = request.CompanyId;
                 property.UnitNumber = request.UnitNumber;
                 property.AddressLine1 = request.AddressLine1;
-                if (user.IsEstateEnable == "1")
-                {
-                    property.EstateId = request.EstateId.Value;
-                }
 
 
                 //property.AddressLine2 = request.AddressLine2;
@@ -96,19 +102,7 @@ IAuditTrail auditTrail)
                     NotificationType = (int)NotificationType.Register
 
                 };
-                if (user.IsEstateEnable == "1" && request.EstateId > 0)
-                {
-                    var usersIds = new List<int>();
-                    int groupId = await _notificationRepository.GetGroupIdByEstateId(request.EstateId.Value).ConfigureAwait(false);
-                    usersIds.Add(request.OwnerId);
-                    var addUserInTopicRequest = new SubscribeTopicsforUsersRequestQuery()
-                    {
-                        GroupId = groupId,
-                        UserIds = usersIds
-                    };
-
-                    await _notificationRepository.AddCustomersInNotificationTopics(addUserInTopicRequest).ConfigureAwait(false);
-                }
+                
                 await _notificationRepository.AddNotifications(newNotification).ConfigureAwait(false);
             }
 
@@ -148,8 +142,8 @@ IAuditTrail auditTrail)
                 throw new ValidationException(validatorResult.Errors);
             var property = await _propertyRepository.GetAllPropertyById(request.Id).ConfigureAwait(false);
             res.Id = await _propertyRepository.DeletePropertyById(request).ConfigureAwait(false);
-            if (_workContext.CurrentRoleId == (int)RoleMasterEnum.Admin || _workContext.CurrentRoleId == (int)RoleMasterEnum.Operator)
-            {
+            //if (_workContext.CurrentRoleId == (int)RoleMasterEnum.Admin || _workContext.CurrentRoleId == (int)RoleMasterEnum.Operator)
+            //{
                 objAudit.ModifiedBy = _workContext.CurrentUserId;
                 objAudit.ActionTable = "ohd_property";
                 objAudit.ModuleName = "Property";
@@ -171,7 +165,7 @@ IAuditTrail auditTrail)
                 objAudit.EntityName = property.Name;
                 objAudit.UpdatedId = res.Id;
                 await _auditTrail.AuditTrail(objAudit).ConfigureAwait(false);
-            }
+            //}
             
             var propertyName = property.Name;
 
@@ -191,6 +185,158 @@ IAuditTrail auditTrail)
             res.Message = "Property updated successfully!";
             return res;
         }
+        public async Task<PropertyActiveDto> Handle(ActivePropertyCommandRequest request, CancellationToken cancellationToken)
+        {
+            var objAudit = new AuditHelper();
+            request.TrimAllStrings();
+            var res = new PropertyActiveDto();
+            var commonValidator = new ActivePropertyCommandRequestValidator(_propertyRepository);
+            var validatorResult = await commonValidator.ValidateAsync(request, cancellationToken);
+            if (!validatorResult.IsValid)
+                throw new ValidationException(validatorResult.Errors);
+
+            var result = await _propertyRepository.GetAllMeterNumbersByPropertyId(request.Id).ConfigureAwait(false);
+            int propertyActiveCount = 0;
+            if (!request.CheckValidation)
+            {
+                if (result != null && result.Count() > 0)
+                {
+                    var meters = result.Select(t => t.MeterNumber).ToList();
+                    var propertyLinked = await _propertyRepository.GetMeterLinkedProperty(meters).ConfigureAwait(false);
+                    if (propertyLinked != null && propertyLinked.Count() > 0)
+                    {
+                        if (propertyLinked is ICollection<LinkedProperty> { Count: > 0 } collection)
+                        {
+
+                            var lookup = propertyLinked.ToDictionary(p => p.MeterNumber);
+                            res.MeterList = result.Select(meter =>
+                            {
+
+                                if (lookup.TryGetValue(meter.MeterNumber, out var linked))
+                                {
+                                    if (linked.LinkedPropertyId != request.Id)
+                                    {
+                                        meter.LinkedProperty = linked.LinkedPropertyName;
+                                        meter.MeterStatus = linked.LinkedPropertyMeterStatus;
+
+                                        meter.PropertyUnitNumber = linked.LinkedPropertyUnitNumber;
+                                    }
+                                    else
+                                    {
+                                        meter.LinkedProperty = null;
+                                        meter.PropertyUnitNumber = null;
+                                    }
+                                }
+                                return meter;
+                            }).ToList();
+                        }
+                    }
+                    else
+                    {
+                        res.MeterList = result.Select(meter =>
+                        {
+                            meter.PropertyUnitNumber = null;
+                            return meter;
+
+                        }).ToList();
+
+                    }
+                }
+
+            }
+
+            if (request.CheckValidation)
+            {
+
+                if (result != null && result.Count() > 0)
+                {
+                    var meters = result.Select(t => t.MeterNumber).ToList();
+
+                    var meterValidationTasks = meters.Select(async m =>
+                    {
+                        var meterUrl = _masterApiSetting.BaseUrl + _masterApiSetting.MeterNumberApi + $"?meter.meterNum={m}&paging=(limit)(5)(offset)(0)";
+
+                        var meterResult = await _masterApiConnectService.GetMeter(meterUrl).ConfigureAwait(false);
+                        if (meterResult != null && meterResult.Data.Count() > 0)
+                        {
+                            if (meterResult.Data[0].CustomerAgreement != null && meterResult.Data[0].CustomerAgreement.Id != null)
+                            {
+                                var customerAggId = meterResult.Data[0].CustomerAgreement.Id;
+
+                                if (customerAggId != null)
+                                {
+                                    propertyActiveCount = await _propertyRepository.UpdateCustomerAgreementValueByPropertyId(request.Id, customerAggId).ConfigureAwait(false);
+                                    var property = await _propertyRepository.GetPropertyById(request.Id).ConfigureAwait(false);
+                                    objAudit.ModifiedBy = _workContext.CurrentUserId;
+                                    objAudit.ActionTable = "ohd_property";
+                                    objAudit.ModuleName = "Property";
+                                    objAudit.StatusId = (int)StatusEnum.Active;
+                                    objAudit.Action = "Activated Property";
+                                    objAudit.EntityName = property.Name;
+                                    objAudit.UpdatedId = request.Id;
+                                    await _auditTrail.AuditTrail(objAudit).ConfigureAwait(false);
+                                }
+
+                            }
+                        }
+                        return new
+                        {
+                            MeterNumber = m,
+                            Exists = meterResult != null && meterResult.Data?.Count() > 0,
+                            MeterResult = meterResult
+                        };
+
+                    });
+
+                    var results = await Task.WhenAll(meterValidationTasks).ConfigureAwait(false);
+
+                    var invalidMeters = results.Where(r => !r.Exists).ToList();
+                    if (invalidMeters.Any())
+                    {
+                        var errors = invalidMeters.Select(m => new ValidationFailure
+                        {
+                            PropertyName = nameof(ActivePropertyCommandRequest.Id),
+                            ErrorMessage = $"MeterNumber: {m.MeterNumber} does not exist"
+                        }).ToList();
+
+                        throw new ValidationException(errors);
+                    }
+
+                    // ✅ All meters valid — proceed with update
+                    try
+                    {
+                        if (propertyActiveCount > 0)
+                        {
+                            var ids = result.Select(t => t.MeterId).ToList();
+                            int count = await _propertyRepository.UpdateMeterStatus(ids).ConfigureAwait(false);
+                            var property = await _propertyRepository.GetPropertyById(request.Id).ConfigureAwait(false);
+                            objAudit.ModifiedBy = _workContext.CurrentUserId;
+                            objAudit.ActionTable = "ohd_meter";
+                            objAudit.ModuleName = "Property";
+                            objAudit.StatusId = (int)StatusEnum.Active;
+                            objAudit.Action = "Activated Property";
+                            objAudit.EntityName = "All meters from " + property.Name + " Property Activated";
+                            objAudit.UpdatedId = request.Id;
+                            await _auditTrail.AuditTrail(objAudit).ConfigureAwait(false);
+                        }
+
+                    }
+                    catch (Exception ex)
+                    {
+                        validatorResult.Errors.Add(new ValidationFailure
+                        {
+                            PropertyName = nameof(ActivePropertyCommandRequest.Id),
+                            ErrorMessage = $"Failed to update meter status: {ex.Message}"
+                        });
+
+                        throw new ValidationException(validatorResult.Errors);
+                    }
+                }
+            }
+
+            return res;
+        }
+
 
     }
 }

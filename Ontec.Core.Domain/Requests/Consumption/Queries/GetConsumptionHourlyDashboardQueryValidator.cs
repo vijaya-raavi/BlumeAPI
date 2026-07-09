@@ -17,7 +17,7 @@ namespace Ontec.Core.Domain.Requests.Consumption.Queries
                     {
                         context.AddFailure(model.MeterId, string.Format(CommonConstants.NotExist, nameof(GetConsumptionHourlyDashboardQuery.MeterId)));
                     }
-                    if (isMeterIdExist != null && string.IsNullOrEmpty(isMeterIdExist.DailyTargetConsumption))
+                    if (isMeterIdExist != null && isMeterIdExist.DailyTargetConsumption==0)
                     {
                         context.AddFailure(model.MeterId, string.Format(CommonConstants.NotExist, nameof(GetConsumptionHourlyDashboardQuery.MeterId)));
                     }

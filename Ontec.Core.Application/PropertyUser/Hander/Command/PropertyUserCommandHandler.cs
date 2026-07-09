@@ -1,15 +1,18 @@
-﻿using FirebaseAdmin.Messaging;
+﻿using FirebaseAdmin;
+using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
-using FirebaseAdmin;
 using MediatR;
+using Microsoft.AspNetCore.Hosting;
 using Ontec.Core.Application.Common.Exceptions;
 using Ontec.Core.Application.Common.Helper;
 using Ontec.Core.Domain.Common.Helper;
 using Ontec.Core.Domain.Enums;
 using Ontec.Core.Domain.Extension;
+using Ontec.Core.Domain.Interface;
 using Ontec.Core.Domain.Interface.Common;
 using Ontec.Core.Domain.Interface.Communication;
 using Ontec.Core.Domain.Interface.Company;
+using Ontec.Core.Domain.Interface.EmailTemplate;
 using Ontec.Core.Domain.Interface.Estate;
 using Ontec.Core.Domain.Interface.Meter;
 using Ontec.Core.Domain.Interface.Notifiation;
@@ -18,19 +21,11 @@ using Ontec.Core.Domain.Interface.Property;
 using Ontec.Core.Domain.Interface.PropertyUser;
 using Ontec.Core.Domain.Interface.User;
 using Ontec.Core.Domain.Models.Dto.Common;
+using Ontec.Core.Domain.Models.Dto.EmailTemplates;
 using Ontec.Core.Domain.Models.Dto.User;
 using Ontec.Core.Domain.Requests.Notification.Command;
 using Ontec.Core.Domain.Requests.Notification.Queries;
 using Ontec.Core.Domain.Requests.PropertyUser.Command;
-using Microsoft.AspNetCore.Hosting;
-using System.Text.RegularExpressions;
-using Ontec.Core.Domain.Interface.EmailTemplate;
-using Ontec.Core.Domain.Interface;
-using Ontec.Core.Domain.Models.Dto.TopUp;
-using Ontec.Core.Domain.Models.Dto.EmailTemplates;
-using System.Reflection;
-using System.Web.Helpers;
-using Scriban;
 
 namespace Ontec.Core.Application.PropertyUser.Hander.Command
 {
@@ -57,6 +52,7 @@ namespace Ontec.Core.Application.PropertyUser.Hander.Command
         private readonly IEmailTemplateRepository _emailTemplateRepository;
         private IHostingEnvironment _environment;
         private readonly ICompanyHelper _companyHelper;
+        private readonly IAuditTrail _auditTrail;
         public PropertyUserCommandHandler(IPropertyUserRepository propertyUserRepository
                                           , IPropertyRepository propertyRepository
                                           , IUserRepository userRepository
@@ -73,7 +69,8 @@ namespace Ontec.Core.Application.PropertyUser.Hander.Command
                                             , IGenericRepository genericRepository
                                             , IEmailTemplateRepository emailTemplateRepository
                                             , IHostingEnvironment environment
-                                            , ICompanyHelper companyHelper)
+                                            , ICompanyHelper companyHelper
+                                            , IAuditTrail auditTrail)
         {
             _propertyUserRepository = propertyUserRepository;
             _propertyRepository = propertyRepository;
@@ -92,6 +89,7 @@ namespace Ontec.Core.Application.PropertyUser.Hander.Command
             _genericRepository = genericRepository;
             _emailTemplateRepository = emailTemplateRepository;
             _companyHelper = companyHelper;
+            _auditTrail = auditTrail;
         }
         public async Task<string> Handle(DeletePropertyUserById request, CancellationToken cancellationToken)
         {
@@ -101,11 +99,12 @@ namespace Ontec.Core.Application.PropertyUser.Hander.Command
             var validatorResult = await commonValidator.ValidateAsync(request, cancellationToken);
             if (!validatorResult.IsValid)
                 throw new ValidationException(validatorResult.Errors);
-
+            var objAudit = new AuditHelper();
             var propertyuser = await _propertyUserRepository.GetPropertyUserById(request.Id).ConfigureAwait(false);
             var propertyUserEnumType = (PropertyUserRelationEnum)propertyuser.PropertyUserTypeId;
             string userType = propertyUserEnumType.ToString();
             var user = await _userRepository.GetUserById(propertyuser.UserId).ConfigureAwait(false);
+
             var company = await _companyRepository.GetCompanyDetails(user.CompanyId).ConfigureAwait(false);
             var property = await _propertyRepository.GetPropertyById(propertyuser.PropertyId).ConfigureAwait(false);
             if (user != null && propertyuser.PropertyUserTypeId == (int)PropertyUserRelationEnum.Tenant)
@@ -122,7 +121,14 @@ namespace Ontec.Core.Application.PropertyUser.Hander.Command
 
                 };
                 await _notificationRepository.AddNotifications(newNotification).ConfigureAwait(false);
-
+                objAudit.ModifiedBy = _workContext.CurrentUserId;
+                objAudit.ActionTable = "ohd_property_user_relation";
+                objAudit.ModuleName = "Property User";
+                objAudit.StatusId = (int)StatusEnum.Inactive;
+                objAudit.Action = "Tenant User deletd";
+                objAudit.EntityName = "Tenant user deleted from property " + property.Name;
+                objAudit.UpdatedId = property.Id;
+                await _auditTrail.AuditTrail(objAudit).ConfigureAwait(false);
             }
             if (user != null && propertyuser.PropertyUserTypeId == (int)PropertyUserRelationEnum.Associate)
             {
@@ -137,46 +143,37 @@ namespace Ontec.Core.Application.PropertyUser.Hander.Command
                     NotificationType = (int)NotificationType.Deleted
 
                 };
-
-
+                if (user.StatusId == (int)StatusEnum.Pending && user.RoleId == (int)RoleMasterEnum.Temporary)
+                {
+                    //await _propertyUserRepository.DeletePermanentPropertyUser(request.Id).ConfigureAwait(false);
+                    //await _userRepository.DeleteUserPermanentById(user.Id).ConfigureAwait(false);
+                }
                 await _notificationRepository.AddNotifications(newNotification).ConfigureAwait(false);
-
+                objAudit.ModifiedBy = _workContext.CurrentUserId;
+                objAudit.ActionTable = "ohd_property_user_relation";
+                objAudit.ModuleName = "Property User";
+                objAudit.StatusId = (int)StatusEnum.Inactive;
+                objAudit.Action = "Associate User deletd";
+                objAudit.EntityName = "Associate user deleted from property " + property.Name;
+                objAudit.UpdatedId = property.Id;
+                await _auditTrail.AuditTrail(objAudit).ConfigureAwait(false);
             }
             await _propertyUserRepository.DeletePropertyUserById(request.Id).ConfigureAwait(false);
             if (user != null && propertyuser.PropertyUserTypeId == (int)PropertyUserRelationEnum.Associate)
             {
-                await _propertyUserRepository.DeleteAssociateUserSetting(request.Id).ConfigureAwait(false);
+                //await _propertyUserRepository.DeleteAssociateUserSetting(request.Id).ConfigureAwait(false);
+                //await _propertyUserRepository.DeletePermanentPropertyUser(request.Id).ConfigureAwait(false);
+                await _userRepository.DeleteUserPermanentById(user.Id).ConfigureAwait(false);
 
 
             }
-            await _notificationRepository.DeleteUserFromNotifications(propertyuser.UserId).ConfigureAwait(false);
-            var estate = await _estateRepository.GetEstateById(property.EstateId).ConfigureAwait(false);
-            var token = "";
-            if (user != null)
-                token = await _userRepository.GetDeviceToken(user.Id).ConfigureAwait(false);
-            if (token != null)
-            {
-                var staleTokens = new List<string>();
-                staleTokens.Add(token);
-                var jsonPath = _environment.ContentRootPath + "\\serviceAccountKey.json";
 
-                if (FirebaseApp.DefaultInstance == null)
-                {
-                    FirebaseApp.Create(new AppOptions()
-                    {
-                        Credential = GoogleCredential.FromFile(jsonPath),
-                    });
-                }
-                var messaging = FirebaseMessaging.DefaultInstance;
-
-                var res = await messaging.UnsubscribeFromTopicAsync(staleTokens, estate.Estate);
-            }
-            await _notificationRepository.DeleteUserFromNotifications(propertyuser.UserId).ConfigureAwait(false);
             return "Deleted successfully!";
         }
 
         public async Task<AddUpdateResultDto> Handle(AddUpdatePropertyUser request, CancellationToken cancellationToken)
         {
+            var objAudit = new AuditHelper();
             request.TrimAllStrings();
             var commonValidator = new AddUpdatePropertyUserValidator(_propertyUserRepository, _propertyRepository, _userRepository, _meterRepository, _workContext, _communicationRepository);
             var validatorResult = await commonValidator.ValidateAsync(request, cancellationToken);
@@ -185,7 +182,8 @@ namespace Ontec.Core.Application.PropertyUser.Hander.Command
             var response = new AddUpdateResultDto();
 
             int result;
-
+            var propertyUserEnumType = (PropertyUserRelationEnum)request.PropertyUserTypeId;
+            string userType = propertyUserEnumType.ToString();
             var userId = await _userRepository.IsMobileInTempUserExist(request.Mobile, request.CompanyId).ConfigureAwait(false);
             var property = await _propertyRepository.GetPropertyById(request.PropertyId).ConfigureAwait(false);
             var user = await _userRepository.GetUserById(_workContext.CurrentUserId).ConfigureAwait(false);
@@ -208,6 +206,17 @@ namespace Ontec.Core.Application.PropertyUser.Hander.Command
                 var password = _encryptionandDecryption.Encrypt("Admin@123");
                 int propertyusertype = request.PropertyUserTypeId;
                 userId = await _userRepository.AddUser(userdeto, password, propertyusertype).ConfigureAwait(false);
+
+                objAudit.AddedBy = _workContext.CurrentUserId;
+                objAudit.ActionTable = "ohd_property_user_relation";
+                objAudit.ModuleName = "Property User";
+                objAudit.StatusId = (int)StatusEnum.Inactive;
+                objAudit.Action = userType + " User added for property : " + property.Name;
+                objAudit.EntityName = request.FirstName + " " + request.LastName;
+                objAudit.UpdatedId = request.PropertyId;
+                await _auditTrail.AuditTrail(objAudit).ConfigureAwait(false);
+
+
                 var group = await _notificationRepository.GetGroups().ConfigureAwait(false);
                 var newUserGroup = group.FirstOrDefault(g => g.Name.Equals("New Users"));
                 List<int> userIds = new List<int>();
@@ -217,21 +226,21 @@ namespace Ontec.Core.Application.PropertyUser.Hander.Command
                     GroupId = newUserGroup.Id,
                     UserIds = userIds
                 };
-                await _notificationRepository.AddNewUserInCustomersInNotificationTopics(userId, newUserGroup.Id).ConfigureAwait(false);
-                //if (user.IsEstateEnable == "1" && property.EstateId > 0)
-                //{
-                //    var usersIds = new List<int>();
-                //    int groupId = await _notificationRepository.GetGroupIdByEstateId(property.EstateId).ConfigureAwait(false);
-                //    usersIds.Add(property.OwnerId);
-                //    usersIds.Add(userId);
-                //    var addUserInTopicRequest = new SubscribeTopicsforUsersRequestQuery()
-                //    {
-                //        GroupId = groupId,
-                //        UserIds = usersIds
-                //    };
+                await _notificationRepository.AddNewUserInCustomersInNotificationTopics(newUserGroup.Id, userId).ConfigureAwait(false);
+                if (user.IsEstateEnable == "1" && property.EstateId > 0)
+                {
+                    var usersIds = new List<int>();
+                    int groupId = await _notificationRepository.GetGroupIdByEstateId(property.EstateId).ConfigureAwait(false);
+                    usersIds.Add(property.OwnerId);
+                    usersIds.Add(userId);
+                    var addUserInTopicRequest = new SubscribeTopicsforUsersRequestQuery()
+                    {
+                        GroupId = groupId,
+                        UserIds = usersIds
+                    };
 
-                //    await _notificationRepository.AddCustomersInNotificationTopics(addUserInTopicRequest).ConfigureAwait(false);
-                //}
+                    await _notificationRepository.AddCustomersInNotificationTopics(addUserInTopicRequest).ConfigureAwait(false);
+                }
             }
 
             if (userId > 0)
@@ -251,6 +260,14 @@ namespace Ontec.Core.Application.PropertyUser.Hander.Command
             {
                 //Update user will be not in current scope 
                 result = await _propertyUserRepository.UpdatePropertyUser(request, userId).ConfigureAwait(false);
+                objAudit.ModifiedBy = _workContext.CurrentUserId;
+                objAudit.ActionTable = "ohd_property_user_relation";
+                objAudit.ModuleName = "Property User";
+                objAudit.StatusId = (int)StatusEnum.Inactive;
+                objAudit.Action = userType + " User updated for property : " + property.Name;
+                objAudit.EntityName = request.FirstName + " " + request.LastName;
+                objAudit.UpdatedId = request.PropertyId;
+                await _auditTrail.AuditTrail(objAudit).ConfigureAwait(false);
             }
             else
             {
@@ -265,88 +282,82 @@ namespace Ontec.Core.Application.PropertyUser.Hander.Command
                     var communicationTypes = existingUserCommunications.Where(t => t.Name.Equals("Email")).Select(t => t.Id).AsEnumerable();
                     await _communicationRepository.InsertUserCommunications(communicationTypes, result).ConfigureAwait(false);
                 }
-
-                if (result > 0)
+                if (user.IsEstateEnable == "1" && property.EstateId > 0)
                 {
-                    response.Id = result;
-
-                    var propertyUserEnumType = (PropertyUserRelationEnum)request.PropertyUserTypeId;
-                    string userType = propertyUserEnumType.ToString();
-                    if (request.Id == 0)
+                    var usersIds = new List<int>();
+                    int groupId = await _notificationRepository.GetGroupIdByEstateId(property.EstateId).ConfigureAwait(false);
+                    usersIds.Add(property.OwnerId);
+                    usersIds.Add(userById.Id);
+                    var addUserInTopicRequest = new SubscribeTopicsforUsersRequestQuery()
                     {
-                        response.Message = userType + " user created successfully!";
+                        GroupId = groupId,
+                        UserIds = usersIds
+                    };
+
+                    await _notificationRepository.AddCustomersInNotificationTopics(addUserInTopicRequest).ConfigureAwait(false);
+                }
+            }
+            // var inviter = await _propertyUserRepository.GetPropertyOwnerDetails(request.PropertyId, _workContext.CurrentUserId).ConfigureAwait(false);
+            if (result > 0)
+            {
+                response.Id = result;
+
+
+                if (request.Id == 0)
+                {
+                    response.Message = userType + " user created successfully!";
+                }
+                else
+                {
+                    response.Message = userType + " user updated successfully!";
+                }
+                //var property = await _propertyRepository.GetPropertyById(request.PropertyId).ConfigureAwait(false);
+                var inviter = new Domain.Models.Dto.PropertyUser.GetPropertyOwnerDeatilsDto();
+                //ToDo: if current user is tenent then pull the details of tenet else pull the details of owner 
+                bool pullPropertyOwnerId = false;
+                var tenantsCount = await _propertyRepository.GetPropertyUsersCountByPropertyId(request.PropertyId, (int)PropertyUserRelationEnum.Tenant).ConfigureAwait(false);
+                if (request.PropertyUserTypeId == (int)PropertyUserRelationEnum.Associate)
+                {
+                    if (tenantsCount == 0)
+                    {
+                        pullPropertyOwnerId = true;
                     }
                     else
                     {
-                        response.Message = userType + " user updated successfully!";
+                        //get tenant details 
+                        inviter = await _propertyUserRepository.GetPropertyTenantDetails(request.PropertyId, _workContext.CurrentUserId).ConfigureAwait(false);
                     }
-                    //var property = await _propertyRepository.GetPropertyById(request.PropertyId).ConfigureAwait(false);
-                    var inviter = new Domain.Models.Dto.PropertyUser.GetPropertyOwnerDeatilsDto();
-                    //ToDo: if current user is tenent then pull the details of tenet else pull the details of owner 
-                    bool pullPropertyOwnerId = false;
-                    var tenantsCount = await _propertyRepository.GetPropertyUsersCountByPropertyId(request.PropertyId, (int)PropertyUserRelationEnum.Tenant).ConfigureAwait(false);
-
-                    inviter = await _propertyUserRepository.GetPropertyOwnerDetails(request.PropertyId, property.OwnerId).ConfigureAwait(false);
-                    var companyDetails = await _companyHelper.GetCompany(request.CompanyId).ConfigureAwait(false);
-                    var emailTemplates = await _emailTemplateRepository.GetEmailTemplates().ConfigureAwait(false);
-                    var welcomeEmail = emailTemplates.FirstOrDefault(g => g.Name.Equals("New Property Users Welcome Email"));
-                    if (!string.IsNullOrEmpty(welcomeEmail.Html))
+                }
+                else
+                {
+                    pullPropertyOwnerId = true;
+                }
+                if (pullPropertyOwnerId)
+                    inviter = await _propertyUserRepository.GetPropertyOwnerDetails(request.PropertyId, _workContext.CurrentUserId).ConfigureAwait(false);
+                var company = await _companyRepository.GetCompanyDetails(request.CompanyId).ConfigureAwait(false);
+                if (inviter != null)
+                {
+                    EmailModelClass obj = new()
                     {
-                        string htmlTemplate = welcomeEmail.Html;
-                        //var matches = Regex.Matches(welcomeEmail.Html, @"{{(.*?)}}");
-                        //List<string> placeholders = matches.Cast<Match>()
-                        //                        .Select(m => m.Groups[1].Value) // Group[1] is the captured variable name
-                        //                        .Distinct()
-                        //                        .ToList();
-                        //var userDict = _genericRepository.ToDictionary(user);
-                        var model = new PropertyUserWelcomeEmailDto
-                        {
-                            CompanyName = companyDetails.Name,
-                            FirstName = userById.FirstName,
-                            UnitNumber = inviter.UnitNumber,
-                            PropertyOwner = inviter.PropertyOwner,
-                            Property = inviter.Property,
-                            Email = userById.Email,
-                            Mobile = userById.Mobile,
-                            companyEmail = companyDetails.Email,
-                            Domain = companyDetails.Domain,
-                            companyLogo = companyDetails.RelativeUrl,
-                        };
 
-                        //foreach (var key in placeholders)
-                        //{
-                        //    if (userDict.TryGetValue(key, out var value))
-                        //    {
-                        //        welcomeEmail.Html = welcomeEmail.Html.Replace("{{" + key + "}}", user.FirstName);
-                        //    }
-                        //}
-                        var template = Template.Parse(welcomeEmail.Html);
-                        welcomeEmail.Html = template.Render(model, memberRenamer: member => member.Name);
-                        if (inviter != null)
-                        {
-                            EmailModelClass obj = new()
-                            {
+                        title = "Invitation to Property User",
+                        email = request.Email,
+                        forEvent = "newPropertyUser",
+                        subtitle = "",
+                        companyId = request.CompanyId,
+                        mobile = request.Mobile,
+                        propertyUser = request.FirstName,
+                        body = inviter.UnitNumber + " by: " + inviter.PropertyOwner + " for property " + inviter.Property + "!",
+                        documentPath = ""
 
-                                title = "Invitation to Property User",
-                                email = request.Email,
-                                forEvent = "newUser", //"newPropertyUser",
-                                subtitle = "",
-                                companyId = request.CompanyId,
-                                mobile = request.Mobile,
-                                propertyUser = request.FirstName,
-                                //body = inviter.UnitNumber + " by: " + inviter.PropertyOwner + " for property " + inviter.Property + "!",
-                                body = welcomeEmail.Html,
-                                documentPath = ""
+                    };
+                    _ = await _otpService.SendEventMail(obj).ConfigureAwait(false);
 
-                            };
-                            _ = await _otpService.SendEventMail(obj).ConfigureAwait(false);
-                        }
-                    }
                     AddOrUpdateNotificationsQuery newNotification = new AddOrUpdateNotificationsQuery
                     {
                         UserID = _workContext.CurrentUserId,
                         Title = userType + " registered",
-                        Description = userType + " :  " + request.FirstName + " registered in " + companyDetails.Name + " system for the account " + inviter.UnitNumber,
+                        Description = userType + " :  " + request.FirstName + " registered in " + company.CompanyName + " system for the account " + inviter.UnitNumber,
                         IsRead = (int)StatusEnum.Sent,
                         NotificationType = (int)NotificationType.Register
 
@@ -361,6 +372,7 @@ namespace Ontec.Core.Application.PropertyUser.Hander.Command
         #region DeletePropertyAssociateUserByPropertyId
         public async Task<string> Handle(DeletePropertyAssociateUserByPropertyId request, CancellationToken cancellationToken)
         {
+            var objAudit = new AuditHelper();
 
             request.TrimAllStrings();
             var token = "";
@@ -379,7 +391,14 @@ namespace Ontec.Core.Application.PropertyUser.Hander.Command
             if (user != null && propertyuser.PropertyUserTypeId == (int)PropertyUserRelationEnum.Associate)
             {
                 await _propertyUserRepository.DeletePropertyAssociateUserById(request.PropertyId).ConfigureAwait(false);
-
+                objAudit.ModifiedBy = _workContext.CurrentUserId;
+                objAudit.ActionTable = "ohd_property_user_relation";
+                objAudit.ModuleName = "Property User";
+                objAudit.StatusId = (int)StatusEnum.Inactive;
+                objAudit.Action = "Associate User deletd";
+                objAudit.EntityName = property.Name;
+                objAudit.UpdatedId = request.PropertyId;
+                await _auditTrail.AuditTrail(objAudit).ConfigureAwait(false);
                 AddOrUpdateNotificationsQuery newNotification = new()
                 {
                     UserID = _workContext.CurrentUserId,
@@ -418,7 +437,7 @@ namespace Ontec.Core.Application.PropertyUser.Hander.Command
         public async Task<AddUpdateResultDto> Handle(AddUpdateAssociateUserSettingsQuery request, CancellationToken cancellationToken)
         {
             request.TrimAllStrings();
-
+            var objAudit = new AuditHelper();
             var commonValidator = new AddUpdateAssociateUserSettingsQueryValidator(_userRepository, _propertyRepository, _workContext, _propertyUserRepository);
             var validatorResult = await commonValidator.ValidateAsync(request, cancellationToken);
             if (!validatorResult.IsValid)
@@ -430,10 +449,22 @@ namespace Ontec.Core.Application.PropertyUser.Hander.Command
 
             request.Id = Id;
 
+            request.Id = Id;
+            if (request.IsAllowTopUp)
+                objAudit.StatusId = 1;
+            else
+                objAudit.StatusId = 0;
             if (request.Id > 0)
             {
                 result = await _propertyUserRepository.UpdateAssociateUserSettings(request).ConfigureAwait(false);
 
+                objAudit.ModifiedBy = _workContext.CurrentUserId;
+                objAudit.ActionTable = "ohd_associate_user_settings";
+                objAudit.ModuleName = "Associate User Settings";
+                objAudit.StatusId = objAudit.StatusId;
+                objAudit.Action = "Associate user settings updated";
+                objAudit.UpdatedId = request.PropertyId;
+                await _auditTrail.AuditTrail(objAudit).ConfigureAwait(false);
             }
             else
             {
@@ -444,6 +475,13 @@ namespace Ontec.Core.Application.PropertyUser.Hander.Command
                     PropertyUserId = request.PropertyUserId
                 };
                 result = await _propertyUserRepository.AddAssociateUserSettings(newAssociate).ConfigureAwait(false);
+                objAudit.AddedBy = _workContext.CurrentUserId;
+                objAudit.ActionTable = "ohd_associate_user_settings";
+                objAudit.ModuleName = "Associate User Settings";
+                objAudit.StatusId = objAudit.StatusId;
+                objAudit.Action = "Associate user settings added";
+                objAudit.UpdatedId = request.PropertyId;
+                await _auditTrail.AuditTrail(objAudit).ConfigureAwait(false);
             }
             if (result > 0)
             {

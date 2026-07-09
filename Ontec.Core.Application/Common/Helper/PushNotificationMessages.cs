@@ -130,7 +130,7 @@ namespace Ontec.Core.Application.Common.Helper
         {
             var response = "";
             using var client = new HttpClient();
-            var companyDetails = await _companyHelper.GetCompany(2).ConfigureAwait(false);
+            var companyDetails = await _companyHelper.GetCompany(3).ConfigureAwait(false);
             var jsonPath = _environment.ContentRootPath + "\\serviceAccountKey.json";
             if (FirebaseApp.DefaultInstance == null)
             {

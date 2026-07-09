@@ -3,12 +3,15 @@ using System.Globalization;
 using MediatR;
 using Ontec.Core.Application.Common.Exceptions;
 using Ontec.Core.Domain.Common;
+using Ontec.Core.Domain.Enums;
 using Ontec.Core.Domain.Extension;
+using Ontec.Core.Domain.Interface.Configuration;
 using Ontec.Core.Domain.Interface.MasterApiService;
 using Ontec.Core.Domain.Interface.Property;
 using Ontec.Core.Domain.Models.Dto.Account;
 using Ontec.Core.Domain.Models.Dto.AccountTransactions;
 using Ontec.Core.Domain.Models.Dto.Charts;
+using Ontec.Core.Domain.Models.Dto.MasteUserAccount;
 using Ontec.Core.Domain.Requests.Account;
 using Ontec.Core.Domain.Requests.Account.Queries;
 
@@ -20,14 +23,17 @@ namespace Ontec.Core.Application.Account.Queries
         private readonly IPropertyRepository _propertyRepository;
         private readonly IMasterApiConnectService _masterApiConnectService;
         private readonly MasterApiSetting _masterApiSetting;
+        private readonly IConfigurationRepository _configurationRepository;
 
         public GetAccountBalanceByPropertyIdHandler(IPropertyRepository propertyRepository
                                    , IMasterApiConnectService masterApiConnectService
-                                   , MasterApiSetting masterApiSetting)
+                                   , MasterApiSetting masterApiSetting
+                                   , IConfigurationRepository configurationRepository )
         {
             _propertyRepository = propertyRepository;
             _masterApiConnectService = masterApiConnectService;
             _masterApiSetting = masterApiSetting;
+            _configurationRepository = configurationRepository;
 
         }
         public async Task<AccountBalanceDto> Handle(GetAccountBalanceByPropertyId request, CancellationToken cancellationToken)
@@ -48,7 +54,7 @@ namespace Ontec.Core.Application.Account.Queries
 
                 var meterUrl = _masterApiSetting.BaseUrl + _masterApiSetting.MeterNumberApi + "?meter.meterNum=" + meter.ToUpper() + "&paging=(limit)(5)(offset)(0)";
                 var meterResult = await _masterApiConnectService.GetMeter(meterUrl).ConfigureAwait(false);
-                if (meterResult != null && string.IsNullOrEmpty(customerAgreementId))
+                if (meterResult != null && meterResult.Data.Count()>0)
                 {
                     customerAgreementId = meterResult.Data[0].CustomerAgreement.Id;
                     balanceDto.AccountName = meterResult.Data[0].CustomerAccount.AccountName;
@@ -71,6 +77,141 @@ namespace Ontec.Core.Application.Account.Queries
             return balanceDto;
         }
 
+        //        public async Task<AccountBalanceDto> Handle(GetAccountHisotryQuery request, CancellationToken cancellationToken)
+        //        {
+        //            request.TrimAllStrings();
+
+        //            var commonValidator = new GetAccountHisotryQueryValidator(_propertyRepository);
+        //            var validatorResult = await commonValidator.ValidateAsync(request, cancellationToken);
+        //            if (!validatorResult.IsValid)
+        //                throw new ValidationException(validatorResult.Errors);
+
+        //            AccountBalanceDto balanceDto = new();
+
+
+
+        //            var meterList = await _propertyRepository.GetMeterNumbersByPropertyId(request.PropertyId).ConfigureAwait(false);
+        //            string customerAccountId = "";
+        //            string customerAgreementId = "";
+        //            foreach (var meter in meterList)
+        //            {
+
+        //                var meterUrl = _masterApiSetting.BaseUrl + _masterApiSetting.MeterNumberApi + "?meter.meterNum=" + meter.ToUpper() + "&paging=(limit)(5)(offset)(0)";
+        //                var meterResult = await _masterApiConnectService.GetMeter(meterUrl).ConfigureAwait(false);
+        //                if (meterResult != null && meterResult.Data.Count() > 0)
+        //                {
+        //                    customerAccountId = meterResult.Data[0].CustomerAccount.Id;
+        //                    balanceDto.AccountName = meterResult.Data[0].CustomerAccount.AccountName;
+        //                    customerAgreementId = meterResult.Data[0].CustomerAgreement.Id;
+        //                    balanceDto.AccountBalance= meterResult.Data[0].CustomerAccount.AccountBalance;
+
+        //                }
+        //            }
+        //            //if (!string.IsNullOrEmpty(customerAgreementId))
+        //            //{
+        //            //    var auxAccountUrl = _masterApiSetting.BaseUrl + _masterApiSetting.AuxAccountApi + "?filter=(customerAgreementId)(EQ)(" + customerAgreementId
+        //            //                      + ")&paging=(limit)(1)(offset)(0)";
+        //            //    var auxAccountResult = await _masterApiConnectService.GetCustomerAuxAccount(auxAccountUrl).ConfigureAwait(false);
+        //            //    if (auxAccountResult != null)
+        //            //    {
+        //            //        balanceDto.AccountBalance = auxAccountResult.Data[0].Balance;
+        ////
+        //            //    }
+        //            //}
+        //            if (!string.IsNullOrEmpty(customerAccountId))
+        //            {
+
+        //                var accountTransactionData = new List<AccountTransaction>();
+        //                DateTime endDate = DateTime.UtcNow;
+        //                DateTime startDate = DateTime.UtcNow;
+
+        //                startDate = DateTime.UtcNow.AddMonths(-4);
+
+        //                var allMonthsInRange = Enumerable.Range(0, 5)
+        //                                  .Select(offset => startDate.AddMonths(offset))
+        //                                  .Select(date => date.ToString("MMM"))
+        //                                  .ToList();
+
+        //                DateTime lastDate = Convert.ToDateTime(startDate);
+        //                DateTime currentdate = Convert.ToDateTime(DateTime.UtcNow);
+        //                TimeSpan objTimeSpan = currentdate - lastDate;
+        //                double days = Convert.ToDouble(objTimeSpan.TotalDays);
+
+        //                Calendar calendar = CultureInfo.CurrentCulture.Calendar;
+        //                var monthlyDepositData = new List<AccountTransaction>();
+        //                bool isDataEnd = false;
+        //                while (!isDataEnd)
+        //                {
+        //                    //startDate = DateTime.UtcNow.AddDays(-(Math.Round(days) - i));
+
+        //                    var startDateS = startDate.ToString("yyyy-MM-dd");
+        //                    startDateS += "T00:00:000.000%2B0000";
+
+        //                    endDate = startDate.AddDays(60);
+
+        //                    var endDateS = endDate.ToString("yyyy-MM-dd");
+        //                    endDateS += "T00:00:000.000%2B0000";
+
+        //                    var inetrvalStart = "&filter=(dateEntered)(GTE)(" + startDateS + ")";
+        //                    var inetrvalEnd = "&filter=(dateEntered)(LTE)(" + endDateS + ")";
+
+        //                    var paging = "&paging=(limit)(250)(offset)(0)";
+
+        //                    var accountTransactionUrl = _masterApiSetting.BaseUrl + _masterApiSetting.AccountTransApi + "?filter=(customerAccountId)(EQ)(" + customerAccountId + ")" + paging + inetrvalStart + inetrvalEnd + "&filter=(accountTransType)(EQ)(DEPOSIT)";
+        //                    var accountTrasactions = await _masterApiConnectService.GetAccountTransactions(accountTransactionUrl).ConfigureAwait(false);
+
+        //                    if (accountTrasactions != null && accountTrasactions.Data.Any())
+        //                    {
+        //                        monthlyDepositData.AddRange(accountTrasactions.Data);
+        //                        startDate = accountTrasactions.Data.Last().DateEntered.AddDays(1);
+        //                    }
+        //                    else if (startDate <= DateTime.UtcNow)
+        //                    {
+        //                        startDate = startDate.AddDays(60);
+        //                    }
+        //                    else
+        //                    {
+        //                        isDataEnd = true;
+        //                    }
+
+        //                }
+        //                // var transactions= monthlyDepositData.OrderByDescending(t=>t.DateEntered).Take(5).ToList();
+        //                var monthWise = (from month in allMonthsInRange
+        //                                 join t in monthlyDepositData
+        //                                 on month equals t.DateEntered.ToString("MMM") into gj
+        //                                 from sub in gj.DefaultIfEmpty()
+        //                                 where sub == null || sub.AccountTransType == "DEPOSIT"
+        //                                 group sub by month into g
+        //                                 select new
+        //                                 {
+        //                                     Months = g.Key,
+        //                                     AmtInclTax = g.Sum(t => t?.AmtInclTax ?? 0) // Handle null values
+        //                                 }).ToList();
+
+        //                var XAxisArray = monthWise.Select(t => t.Months.ToString()).ToList();
+        //                var balanceArray = monthWise.Select(t => Convert.ToDouble(t.AmtInclTax)).ToList();
+        //                balanceDto.AccountHistory = new LineChartDto
+        //                {
+        //                    XAxisdata = XAxisArray,
+        //                    SeriesLineData = balanceArray
+        //                };
+        //                var transactions = monthlyDepositData .OrderByDescending(t => t.DateEntered).Take(5)
+        //                                    .Select(t => new RececntTransaction
+        //                                    {
+        //                                        TransactionType = t.AccountTransType,
+        //                                        TransactionDate = t.DateEntered,
+        //                                        Amount = t.AmtInclTax,
+        //                                        TransactionId=t.Id
+
+        //                                    })
+        //                                    .ToList();
+        //                balanceDto.RececntTransactions= transactions;
+        //            }
+        //            return balanceDto;
+        //        }
+
+
+
         public async Task<AccountBalanceDto> Handle(GetAccountHisotryQuery request, CancellationToken cancellationToken)
         {
             request.TrimAllStrings();
@@ -81,37 +222,112 @@ namespace Ontec.Core.Application.Account.Queries
                 throw new ValidationException(validatorResult.Errors);
 
             AccountBalanceDto balanceDto = new();
-           
+
 
 
             var meterList = await _propertyRepository.GetMeterNumbersByPropertyId(request.PropertyId).ConfigureAwait(false);
             string customerAccountId = "";
             string customerAgreementId = "";
+            string masterMeterId = "";
+
+            // 1. Fetch config ONCE, outside the meter loop
+            var editableConfiguration = await _configurationRepository.GetConfigurations().ConfigureAwait(false);
+            var auxAccountDetailsConfig = editableConfiguration?.FirstOrDefault(t => t.Name.Contains("auxaccountdetails", StringComparison.CurrentCultureIgnoreCase));
+            var auxAccountDetailsEnabled = auxAccountDetailsConfig?.Value == "1";
+
             foreach (var meter in meterList)
             {
+                var meterUrl = _masterApiSetting.BaseUrl + _masterApiSetting.MeterNumberApi + "?meter.meterNum=" + meter + "&paging=(limit)(5)(offset)(0)";
 
-                var meterUrl = _masterApiSetting.BaseUrl + _masterApiSetting.MeterNumberApi + "?meter.meterNum=" + meter.ToUpper() + "&paging=(limit)(5)(offset)(0)";
                 var meterResult = await _masterApiConnectService.GetMeter(meterUrl).ConfigureAwait(false);
-                if (meterResult != null && string.IsNullOrEmpty(customerAccountId))
-                {
-                    customerAccountId = meterResult.Data[0].CustomerAccount.Id;
-                    balanceDto.AccountName = meterResult.Data[0].CustomerAccount.AccountName;
-                    customerAgreementId = meterResult.Data[0].CustomerAgreement.Id;
-                    balanceDto.AccountBalance= meterResult.Data[0].CustomerAccount.AccountBalance;
+                if (meterResult?.Data == null || !meterResult.Data.Any())
+                    continue;
 
-                }
+                var meterData = meterResult.Data[0];
+                customerAccountId = meterData.CustomerAccount.Id;
+                balanceDto.AccountName = meterData.CustomerAccount.AccountName;
+                customerAgreementId = meterData.CustomerAgreement.Id;
+                balanceDto.AccountBalance = meterData.CustomerAccount.AccountBalance;
+                masterMeterId = meterData.Meter.Id;
+
+                if (!auxAccountDetailsEnabled)
+                    continue; // or break, depending on whether you still need customerAccountId etc. set
+
+                var auxAccountUrl = _masterApiSetting.BaseUrl + _masterApiSetting.AuxAccountApi + "?filter=(customerAgreementId)(EQ)(" + customerAgreementId + ")&paging=(limit)(250)(offset)(0)";
+
+                var auxAccountResult = await _masterApiConnectService.GetCustomerAuxAccount(auxAccountUrl).ConfigureAwait(false);
+                if (auxAccountResult?.Data == null || !auxAccountResult.Data.Any())
+                    continue;
+
+                var activeAccounts = auxAccountResult.Data.Where(x => x.RecordStatus == "ACT")
+                                                          .OrderBy(x => x.Balance)
+                                                          .ThenBy(x => x.AccountPriority);
+
+                balanceDto.TotalAuxAccounts = activeAccounts.Count();
+                balanceDto.AuxAccountBalance = activeAccounts.Sum(x => x.Balance);
+
+                // 2. Parallelize per-account schedule + transaction calls
+                var accountTasks = activeAccounts.Select(async aux =>
+                {
+                    var auxAccountSummary = new AuxAccountDto
+                    {
+                        Id = aux.Id,
+                        AccountName = aux.AccountName,
+                        Balance = aux.Balance,
+                        AccountPriority = aux.AccountPriority,
+                        RecordStatus = aux.RecordStatus,
+                        SuspendUntil = aux.SuspendUntil,
+                        StartDate = aux.StartDate
+                    };
+
+                    // replace with actual result type
+                    if (!string.IsNullOrEmpty(aux.AuxChargeScheduleId))
+                    {
+                        var scheduleUrl = _masterApiSetting.BaseUrl + _masterApiSetting.AuxChargeScheduleApi + "?filter=(id)(EQ)(" + aux.AuxChargeScheduleId + ")&paging=(limit)(5)(offset)(0)";
+                        var scheduleTask = _masterApiConnectService.GetCustomerAuxChargeSchedule(scheduleUrl);
+
+
+                        var txnUrl = _masterApiSetting.BaseUrl + _masterApiSetting.AccountTransApi + "?filter=(auxAccountId)(EQ)(" + aux.Id + ")&paging=(limit)(5)(offset)(0)";
+                        var txnTask = _masterApiConnectService.GetAccountTransactions(txnUrl);
+
+                        // run schedule + txn concurrently (schedule may be null/skipped)
+                        if (scheduleTask != null)
+                            await Task.WhenAll(scheduleTask, txnTask).ConfigureAwait(false);
+                        else
+                            await txnTask.ConfigureAwait(false);
+
+                        if (scheduleTask?.Result?.Data != null && scheduleTask.Result.Data.Any())
+                        {
+                            auxAccountSummary.ScheduleCharges = new ChargeScheduleData
+                            {
+                                Data = scheduleTask.Result.Data.Select(s => new ChargeScheduleDto
+                                {
+                                    VendPortion = s.VendPortion,
+                                    DailyAmount = s.DailyAmount,
+                                    MinAmt = s.MinAmt,
+                                    MaxAmt = s.MaxAmt,
+                                    CurrentPortion = s.CurrentPortion,
+                                    ScheduleName = s.ScheduleName,
+                                    RecordStatus = s.RecordStatus,
+                                    ChargeCycle = s.ChargeCycle,
+                                    ChargeAmt = s.ChargeAmt,
+                                    AccountSpecific = s.AccountSpecific,
+                                }).ToList()
+                            };
+                        }
+
+                        if (txnTask.Result?.Data != null && txnTask.Result.Data.Any())
+                        {
+                            auxAccountSummary.Transactions = txnTask.Result.Data.OrderByDescending(t => t.TransDate).ToList();
+                        }
+                    }
+
+                    return auxAccountSummary;
+                });
+
+                var summaries = await Task.WhenAll(accountTasks).ConfigureAwait(false);
+                balanceDto.AuxAccounts.AddRange(summaries); // every active account now included, per-schedule bug fixed
             }
-            //if (!string.IsNullOrEmpty(customerAgreementId))
-            //{
-            //    var auxAccountUrl = _masterApiSetting.BaseUrl + _masterApiSetting.AuxAccountApi + "?filter=(customerAgreementId)(EQ)(" + customerAgreementId
-            //                      + ")&paging=(limit)(1)(offset)(0)";
-            //    var auxAccountResult = await _masterApiConnectService.GetCustomerAuxAccount(auxAccountUrl).ConfigureAwait(false);
-            //    if (auxAccountResult != null)
-            //    {
-            //        balanceDto.AccountBalance = auxAccountResult.Data[0].Balance;
-//
-            //    }
-            //}
             if (!string.IsNullOrEmpty(customerAccountId))
             {
 
@@ -139,12 +355,12 @@ namespace Ontec.Core.Application.Account.Queries
                     //startDate = DateTime.UtcNow.AddDays(-(Math.Round(days) - i));
 
                     var startDateS = startDate.ToString("yyyy-MM-dd");
-                    startDateS += "T00:00:000.000%2B0000";
+                    startDateS += "T00:00:000.000%2B0200";
 
                     endDate = startDate.AddDays(60);
 
                     var endDateS = endDate.ToString("yyyy-MM-dd");
-                    endDateS += "T00:00:000.000%2B0000";
+                    endDateS += "T00:00:000.000%2B0200";
 
                     var inetrvalStart = "&filter=(dateEntered)(GTE)(" + startDateS + ")";
                     var inetrvalEnd = "&filter=(dateEntered)(LTE)(" + endDateS + ")";
@@ -181,7 +397,7 @@ namespace Ontec.Core.Application.Account.Queries
                                      Months = g.Key,
                                      AmtInclTax = g.Sum(t => t?.AmtInclTax ?? 0) // Handle null values
                                  }).ToList();
-               
+
                 var XAxisArray = monthWise.Select(t => t.Months.ToString()).ToList();
                 var balanceArray = monthWise.Select(t => Convert.ToDouble(t.AmtInclTax)).ToList();
                 balanceDto.AccountHistory = new LineChartDto
@@ -189,17 +405,17 @@ namespace Ontec.Core.Application.Account.Queries
                     XAxisdata = XAxisArray,
                     SeriesLineData = balanceArray
                 };
-                var transactions = monthlyDepositData .OrderByDescending(t => t.DateEntered).Take(5)
+                var transactions = monthlyDepositData.OrderByDescending(t => t.DateEntered).Take(5)
                                     .Select(t => new RececntTransaction
                                     {
                                         TransactionType = t.AccountTransType,
                                         TransactionDate = t.DateEntered,
                                         Amount = t.AmtInclTax,
-                                        TransactionId=t.Id
-                                       
+                                        TransactionId = t.Id
+
                                     })
                                     .ToList();
-                balanceDto.RececntTransactions= transactions;
+                balanceDto.RececntTransactions = transactions;
             }
             return balanceDto;
         }
