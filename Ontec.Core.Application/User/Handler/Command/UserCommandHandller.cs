@@ -86,7 +86,6 @@ IAuditTrail auditTrail)
                 throw new ValidationException(validatorResult.Errors);
             var id = 0;
             int Status = 0;
-           
             bool isBusinessHours = false;
             try
             {
@@ -394,7 +393,7 @@ IAuditTrail auditTrail)
         public async Task<string> Handle(DeleteUserById request, CancellationToken cancellationToken)
         {
             request.TrimAllStrings();
-
+            var objAudit = new AuditHelper();
             var commonValidator = new DeleteUserByIdValidator(_userRepository, _workContext);
             var validatorResult = await commonValidator.ValidateAsync(request, cancellationToken);
             if (!validatorResult.IsValid)
@@ -406,7 +405,14 @@ IAuditTrail auditTrail)
             string subtitle;
             string forEvent;
             var user = await _userRepository.GetUserById(request.Id).ConfigureAwait(false);
-
+            objAudit.ModifiedBy = _workContext.CurrentUserId;
+            objAudit.Action = "Delete User";
+            objAudit.ActionTable = "ohd_user";
+            objAudit.ModuleName = "User";
+            objAudit.StatusId = (int)StatusEnum.Inactive;
+            objAudit.EntityName = user.UserName;
+            objAudit.UpdatedId = request.Id;
+            await _auditTrail.AuditTrail(objAudit).ConfigureAwait(false);
             EmailModelClass obj = new()
             {
 
@@ -455,6 +461,7 @@ IAuditTrail auditTrail)
         #region changePassword
         public async Task<AddUpdateResultDto> Handle(ChangePasswordQuery request, CancellationToken cancellationToken)
         {
+            var objAudit = new AuditHelper();
             request.TrimAllStrings();
             var commonValidator = new ChangePasswordQueryValidator(_userRepository, _workContext);
             var validatorResult = await commonValidator.ValidateAsync(request, cancellationToken);
@@ -488,27 +495,34 @@ IAuditTrail auditTrail)
 
                     };
                     await _notificationRepository.AddNotifications(newNotification).ConfigureAwait(false);
+                    objAudit.AddedBy = _workContext.CurrentUserId;
+                    objAudit.Action = "Change Password";
+                    objAudit.ActionTable = "ohd_user";
+                    objAudit.ModuleName = "User";
+                    objAudit.StatusId = (int)StatusEnum.Inactive;
+                    objAudit.EntityName = user.UserName;
+                    objAudit.UpdatedId = user.Id;
+                    await _auditTrail.AuditTrail(objAudit).ConfigureAwait(false);
+                    //var emailTemplates = await _emailTemplateRepository.GetEmailTemplates().ConfigureAwait(false);
+                    //  var passwordEmail = emailTemplates.FirstOrDefault(g => g.Name.Equals("Password Reset"));
+                    //if (!string.IsNullOrEmpty(passwordEmail.Html))
+                    //{
+                    //    string htmlTemplate = passwordEmail.Html;
+                    //    var matches = Regex.Matches(passwordEmail.Html, @"{{(.*?)}}");
+                    //    List<string> placeholders = matches.Cast<Match>()
+                    //                            .Select(m => m.Groups[1].Value) // Group[1] is the captured variable name
+                    //    .Distinct()
+                    //                            .ToList();
+                    //    var userDict = _genericRepository.ToDictionary(user);
 
-                    var emailTemplates = await _emailTemplateRepository.GetEmailTemplates().ConfigureAwait(false);
-                    var passwordEmail = emailTemplates.FirstOrDefault(g => g.Name.Equals("Password Reset"));
-                    if (!string.IsNullOrEmpty(passwordEmail.Html))
-                    {
-                        string htmlTemplate = passwordEmail.Html;
-                        var matches = Regex.Matches(passwordEmail.Html, @"{{(.*?)}}");
-                        List<string> placeholders = matches.Cast<Match>()
-                                                .Select(m => m.Groups[1].Value) // Group[1] is the captured variable name
-                        .Distinct()
-                                                .ToList();
-                        var userDict = _genericRepository.ToDictionary(user);
-
-                        foreach (var key in placeholders)
-                        {
-                            if (userDict.TryGetValue(key, out var value))
-                            {
-                                passwordEmail.Html = passwordEmail.Html.Replace("{{" + key + "}}", user.FirstName);
-                            }
-                        }
-                        EmailModelClass obj = new()
+                    //    foreach (var key in placeholders)
+                    //    {
+                    //        if (userDict.TryGetValue(key, out var value))
+                    //        {
+                    //            passwordEmail.Html = passwordEmail.Html.Replace("{{" + key + "}}", user.FirstName);
+                    //        }
+                    //    }
+                    EmailModelClass obj = new()
                         {
 
                             title = "",
@@ -517,7 +531,7 @@ IAuditTrail auditTrail)
                             subtitle = "",
                             mobile = user.Mobile,
                             propertyUser = user.UserName,
-                            body = passwordEmail.Html,
+                            body = "",
                             documentPath = "",
                             companyId = user.CompanyId
                         };
@@ -525,7 +539,7 @@ IAuditTrail auditTrail)
                         {
                             await _otpService.SendEventMail(obj).ConfigureAwait(false);
                         }
-                    }
+                    //}
                     int count = await _userRepository.IsSessionKeyExist(request.SessionKey).ConfigureAwait(false);
                     if (count > 0)
                     {

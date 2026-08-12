@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Ontec.Core.Application.Common.Exceptions;
 using Ontec.Core.Domain.Common.Helper;
+using Ontec.Core.Domain.Enums;
 using Ontec.Core.Domain.Extension;
 using Ontec.Core.Domain.Interface.Company;
 using Ontec.Core.Domain.Interface.Configuration;
@@ -70,7 +71,7 @@ namespace Ontec.Core.Application.Company.Query
                     var editableConfiguration = await _configurationRepository.GetConfigurations().ConfigureAwait(false);
                     if (editableConfiguration != null)
                     {
-                        var paymentGateway = editableConfiguration.Where(t => t.Name.Contains("islekkapay", StringComparison.CurrentCultureIgnoreCase)).FirstOrDefault();
+                        var paymentGateway = editableConfiguration.Where(t => t.Name.Contains("paymentgateway", StringComparison.CurrentCultureIgnoreCase)).FirstOrDefault();
 
 
                         var config = editableConfiguration.Where(t => t.Name.Contains("isbanktransferenable", StringComparison.CurrentCultureIgnoreCase))
@@ -89,7 +90,9 @@ namespace Ontec.Core.Application.Company.Query
                         if (paymentGateway != null)
                         {
                             string paymentGatewayValue = paymentGateway.Value;
-                            if (paymentGatewayValue == "1")
+                            cDto.PaymentGateWay = paymentGatewayValue;
+                            PaymentGatewaysEnum gateway = PaymentGatewaysEnum.LekkaPay;
+                            if (paymentGatewayValue == gateway.ToString())
                                 cDto.IsLekkaPay = true;
                             else
                                 cDto.IsLekkaPay = false;
@@ -123,10 +126,12 @@ namespace Ontec.Core.Application.Company.Query
             var companyMaster = new CompanyMasters();
             var countryList = _companyRepository.GetCountries();
             var stateList = _companyRepository.GetStates();
+            var paymentGateWays = _companyRepository.GetPaymentGateWays();
 
             await Task.WhenAll(countryList, stateList).ConfigureAwait(false);
             companyMaster.CountryList = countryList.Result;
             companyMaster.StateList = stateList.Result;
+            companyMaster.PaymentGateWays = paymentGateWays.Result;
             return companyMaster;
         }
 

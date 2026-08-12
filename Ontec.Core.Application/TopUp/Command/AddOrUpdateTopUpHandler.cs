@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using iTextSharp.text.log;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
@@ -137,7 +138,7 @@ namespace Ontec.Core.Application.TopUp.Command
         {
             request.TrimAllStrings();
 
-            var commonValidator = new AddTopUpTransactionQueryValidaotr(_userRepository, _workContext, _meterRepository, _configurationRepository);
+            var commonValidator = new AddTopUpTransactionQueryValidaotr(_userRepository, _workContext, _meterRepository, _configurationRepository,_topUpRepository);
             var validatorResult = await commonValidator.ValidateAsync(request, cancellationToken);
             if (!validatorResult.IsValid)
                 throw new ValidationException(validatorResult.Errors);
@@ -361,6 +362,7 @@ namespace Ontec.Core.Application.TopUp.Command
         //Notify payfast response when wallet is not selected
         public async Task<VendRequestResponse> Handle(PayFastModel request, CancellationToken cancellationToken)
         {
+            _logger.LogInformation("Entered in PayFastModel handler");
             var response = new VendRequestResponse();
             try
             {
@@ -380,62 +382,51 @@ namespace Ontec.Core.Application.TopUp.Command
                     //int id = await _topUpRepository.IsTransactionNoExist(request.m_payment_id).ConfigureAwait(false);
 
                     companyDetails = await _companyHelper.GetCompany(user.CompanyId).ConfigureAwait(false);
+
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, user.CompanyId.ToString());
                     throw;
                 }
-                //if (request.IsWalletRecharge.Value && string.IsNullOrEmpty(topupTransaction.PayFastResponse))
-                //{
-                //    validatorResult.Errors.Add(new FluentValiodation.Results.ValidationFailure
-                //    {
-                //        PropertyName = nameof(PayFastModel.m_payment_id),
-                //        ErrorMessage = "Invalid Transaction"
-                //    });
-                //}
-
-                //added to check whether transaction processed earlier
+               
                 if (string.IsNullOrEmpty(topupTransaction.PayFastResponse) && !string.IsNullOrEmpty(topupTransaction.TopupStatus) && topupTransaction.TopupStatus == "TrailVendSuccess" && string.IsNullOrEmpty(topupTransaction.VendResponse) && string.IsNullOrEmpty(topupTransaction.ReceiptNumber))
                 {
+                    _logger.LogInformation("Entered in if Condition");
+                    _logger.LogInformation("validated txn not processed previouslvalidated txn not processed previousl");
                     LogToFile(companyDetails.WWWPath, "validated txn not processed previously");
                     LogToFile(companyDetails.WWWPath, request.pf_payment_id + " " + request.signature + " " + request.merchant_id + " " + request.payment_status);
+                    _logger.LogInformation("pf_payment_id :" + request.pf_payment_id + " ," + " Signature : "+ request.signature + " ," + " merchant_id : "+ request.merchant_id + " , " + "payamnet_status : " + request.payment_status);
 
-                    var applicationLogger = new ApplicationLogger
-                    {
-                        Request = (request.pf_payment_id + " " + request.signature + " " + request.merchant_id + " " + request.payment_status),
-                        Method = "payfastmodel",
 
-                    };
-                    _ = await _documentRepository.AddApplicationLogger(applicationLogger).ConfigureAwait(false);
-
-                    //if (topupTransaction.id > 0)
-                    //{
-                    LogToFile(companyDetails.WWWPath, "before update payfast response " + user.CompanyId.ToString());
+                    _logger.LogInformation("before update payfast response ");
                     try
                     {
                         result = await _topUpRepository.UpdateTopupTransactions(request).ConfigureAwait(false);
-                        LogToFile(companyDetails.WWWPath, $"UpdateTopupTransactions returned: {result}");
+                        //LogToFile(companyDetails.WWWPath, $"UpdateTopupTransactions returned: {result}");
+
+                        _logger.LogInformation("UpdateTopupTransactions returned: " + result);
                     }
                     catch (Exception ex)
                     {
                         LogToFile(companyDetails.WWWPath, $"Exception in UpdateTopupTransactions: {ex.Message} {ex.StackTrace}");
+                        _logger.LogInformation("Exception in UpdateTopupTransactions " + ex.Message);
                         throw;
                     }
                     try
                     {
-                        LogToFile(companyDetails.WWWPath, $"UpdateTopupTransactions returned: {result}");
+                        _logger.LogInformation("before UpdateTransactionStatus");
                         await _topUpRepository.UpdateTransactionStatus(TopUpStatusEnum.PayFastSuccess.ToString(), (int)PaymentStatus.Failed, null, topupTransaction.Id, null, null, null, null, null, null, null, null).ConfigureAwait(false);
+                        _logger.LogInformation("after  UpdateTransactionStatus");
                     }
                     catch (Exception ex)
                     {
-                        LogToFile(companyDetails.WWWPath, $"Exception in UpdateTransactionStatus: {ex.Message} {ex.StackTrace}");
+                        _logger.LogInformation("Exception in UpdateTransactionStatus " + ex.Message);
                         throw;
                     }
                     if (result > 0)
                     {
-
-                        LogToFile(companyDetails.WWWPath, "if result > 0" + result);
+                        _logger.LogInformation("if result >0  " + result);
                         response.StatusCode = 200;
                         string transactionRemark = "";
                         //var topupTransaction = await _topUpRepository.GetTopupTransactionDetails(request.m_payment_id);
@@ -502,31 +493,31 @@ namespace Ontec.Core.Application.TopUp.Command
                                         {
                                             var amount = PurchaseDetails.stdamt.ToString().Replace(",", ".");
                                             mailBody = company.Name +
-                                                    "\n Payment received." +
-                                                    "\nMeter: " + PurchaseDetails.MeterNumber +
-                                                    "\nRCT: " + PurchaseDetails.ReceiptId +
-                                                    "\nAmt: R " + Math.Round(Convert.ToDecimal(amount) / 100, 2) +
-                                                    "\nToken: " + PurchaseDetails.StandardTokens +
-                                                    "\nUnits: " + PurchaseDetails.Units;
+                                                    "<br> Payment received." +
+                                                    "<br>Meter: " + PurchaseDetails.MeterNumber +
+                                                    "<br>RCT: " + PurchaseDetails.ReceiptId +
+                                                    "<br>Amt: R " + Math.Round(Convert.ToDecimal(amount) / 100, 2) +
+                                                    "<br>Token: " + PurchaseDetails.StandardTokens +
+                                                    "<br>Units: " + PurchaseDetails.Units;
                                             body = mailBody;
                                         }
                                         if (!string.IsNullOrEmpty(PurchaseDetails.BsstToken))
                                         {
                                             var amount = PurchaseDetails.BsstTokenAmount.ToString().Replace(",", ".");
                                             mailBody = company.Name +
-                                                     "\n Payment received." +
-                                                     "\nRCT: " + PurchaseDetails.ReceiptId +
-                                                     "\nAmt: R " + Math.Round(Convert.ToDecimal(amount) / 100, 2);
+                                                     "<br> Payment received." +
+                                                     "<br>RCT: " + PurchaseDetails.ReceiptId +
+                                                     "<br>Amt: R " + Math.Round(Convert.ToDecimal(amount) / 100, 2);
                                             body = mailBody;
                                         }
                                         else
                                         {
                                             var amount = PurchaseDetails.ActualRechargeAmount.ToString().Replace(",", ".");
                                             mailBody = company.Name +
-                                                      "\nPayment received." +
-                                                      "\nRCT: " + PurchaseDetails.RctNo +
-                                                      "\nAmt: R " + Math.Round(Convert.ToDecimal(amount) / 100, 2) +
-                                                      "\nRemaining bal: R " + Math.Round(Convert.ToDecimal(userWallet.Balance) / 100, 2);
+                                                      "<br>Payment received." +
+                                                      "<br>RCT: " + PurchaseDetails.RctNo +
+                                                      "<br>Amt: R " + Math.Round(Convert.ToDecimal(amount) / 100, 2) +
+                                                      "<br>Remaining bal: R " + Math.Round(Convert.ToDecimal(userWallet.Balance) / 100, 2);
                                             body = mailBody;
 
 
@@ -599,11 +590,11 @@ namespace Ontec.Core.Application.TopUp.Command
 
 
                                     mailBody = company.Name +
-                                                      "\nTransaction failed reason: " + vednFailedMessage +
-                                                      "\nTransaction remark: " + transactionRemark +
-                                                      "\nAmt: R " + topupTransaction.Amount +
-                                                      "\nTransaction fee: R " + topupTransaction.TransactionFee +
-                                                      "\nRecharge amount: R " + topupTransaction.RechargeAmount;
+                                                      "<br>Transaction failed reason: " + vednFailedMessage +
+                                                      "<br>Transaction remark: " + transactionRemark +
+                                                      "<br>Amt: R " + topupTransaction.Amount +
+                                                      "<br>Transaction fee: R " + topupTransaction.TransactionFee +
+                                                      "<br>Recharge amount: R " + topupTransaction.RechargeAmount;
                                     body = mailBody;
 
                                     await SendEmailMessage(topupTransaction, user, body).ConfigureAwait(false);

@@ -1,6 +1,4 @@
-﻿using System.Drawing;
-using iText.Layout.Element;
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Hosting;
 using Ontec.Core.Application.Common.Exceptions;
 using Ontec.Core.Application.Common.Helper;
@@ -18,14 +16,10 @@ using Ontec.Core.Domain.Interface.Notifiation;
 using Ontec.Core.Domain.Interface.Property;
 using Ontec.Core.Domain.Interface.User;
 using Ontec.Core.Domain.Models.Dto.Common;
-using Ontec.Core.Domain.Models.Dto.Consumption;
 using Ontec.Core.Domain.Models.Dto.Document;
-using Ontec.Core.Domain.Models.Dto.EmailTemplates;
 using Ontec.Core.Domain.Requests.Meter.Command;
 using Ontec.Core.Domain.Requests.Notification.Command;
 using Ontec.Core.Domain.Requests.Notification.Queries;
-using Org.BouncyCastle.Crypto;
-using Scriban;
 
 namespace Ontec.Core.Application.Meter.Handler.Command
 {
@@ -192,15 +186,164 @@ IAuditTrail auditTrail)
             {
 
 
+                //if (currentTime >= fromBusinessHours && currentTime <= toBusinessHours)
+                //{
+                //    isBusinessHours = true;
+                //}
+                //else
+                //{
+
+                //    isBusinessHours = false;
+                //}
+                //if (enabled && isBusinessHours && isEnableBusinessHours && isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Pending;
+                //    request.Comments = "Meter send to admin for approval.";
+                //    isVerified = false;
+                //}
+                //if (enabled && isBusinessHours && !isEnableBusinessHours && isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Active;
+                //    request.Comments = "";
+                //    isVerified = false;
+                //}
+                //if (enabled && isBusinessHours && isEnableBusinessHours && !isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Pending;
+                //    request.Comments = "Meter send to admin for approval.";
+                //    isVerified = false;
+                //}
+                //if (enabled && isBusinessHours && !isEnableBusinessHours && !isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Active;
+                //    request.Comments = "";
+                //    isVerified = false;
+                //}
+                //if (!enabled && isBusinessHours && isEnableBusinessHours && isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Pending;
+                //    request.Comments = "";
+                //    isVerified = false;
+                //}
+                //if (enabled && !isBusinessHours && isEnableBusinessHours && isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Pending;
+                //    request.Comments = "Meter send to admin for approval.";
+                //    isVerified = false;
+                //}
+                //if (enabled && !isBusinessHours && !isEnableBusinessHours && isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Pending;
+                //    request.Comments = "Meter send to admin for approval.";
+                //    isVerified = false;
+                //}
+                //if (enabled && !isBusinessHours && isEnableBusinessHours && !isEnableNonBusinessHours)
+                //{
+
+                //    request.StatusId = (int)StatusEnum.Active;
+                //    request.Comments = "";
+                //    isVerified = false;
+                //}
+                //if (enabled && !isBusinessHours && !isEnableBusinessHours && !isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Active;
+                //    request.Comments = "";
+                //    isVerified = false;
+                //}
+                //if (!enabled && !isBusinessHours && isEnableBusinessHours && isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Pending;
+                //    request.Comments = "Meter send to admin for approval.";
+                //    isVerified = false;
+                //}
+                //if (!enabled && !isBusinessHours && !isEnableBusinessHours && isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Pending;
+                //    request.Comments = "Meter send to admin for approval.";
+                //    isVerified = false;
+                //}
+                //if (!enabled && !isBusinessHours && isEnableBusinessHours && !isEnableNonBusinessHours)
+                //{
+
+                //    request.StatusId = (int)StatusEnum.Active;
+                //    request.Comments = "";
+                //    isVerified = false;
+                //}
+                //if (!enabled && !isBusinessHours && !isEnableBusinessHours && !isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Active;
+                //    request.Comments = "";
+                //    isVerified = false;
+                //}
+                //if (!enabled && !isBusinessHours && isEnableBusinessHours && isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Pending;
+                //    request.Comments = "Meter send to admin for approval.";
+                //    isVerified = false;
+                //}
+                //if (!enabled && !isBusinessHours && !isEnableBusinessHours && isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Pending;
+                //    request.Comments = "Meter send to admin for approval.";
+                //    isVerified = false;
+                //}
+                //if (!enabled && !isBusinessHours && isEnableBusinessHours && !isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Active;
+                //    request.Comments = "";
+                //    isVerified = false;
+                //}
+                //if (!enabled && !isBusinessHours && !isEnableBusinessHours && !isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Active;
+                //    request.Comments = "";
+                //    isVerified = false;
+                //}
+                //if (!enabled && isBusinessHours && !isEnableBusinessHours && !isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Active;
+                //    request.Comments = "";
+                //    isVerified = false;
+                //}
+                //if (enabled && isBusinessHours && isEnableBusinessHours && !isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Pending;
+                //    request.Comments = "Meter send to admin for approval.";
+                //    isVerified = false;
+                //}
+                //if (!enabled && isBusinessHours && isEnableBusinessHours && !isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Pending;
+                //    request.Comments = "Meter send to admin for approval.";
+                //    isVerified = false;
+                //}
+                //if (enabled && isBusinessHours && !isEnableBusinessHours && isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Active;
+                //    request.Comments = "Meter send to admin for approval.";
+                //    isVerified = false;
+                //}
+                //if (!enabled && isBusinessHours && !isEnableBusinessHours && isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Active;
+                //    request.Comments = "";
+                //    isVerified = false;
+                //}
+                //if (!enabled && isBusinessHours && !isEnableBusinessHours && !isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Active;
+                //    request.Comments = "";
+                //    isVerified = false;
+                //}
                 if (currentTime >= fromBusinessHours && currentTime <= toBusinessHours)
                 {
                     isBusinessHours = true;
                 }
                 else
                 {
-
                     isBusinessHours = false;
                 }
+
                 if (enabled && isBusinessHours && isEnableBusinessHours && isEnableNonBusinessHours)
                 {
                     request.StatusId = (int)StatusEnum.Pending;
@@ -225,13 +368,6 @@ IAuditTrail auditTrail)
                     request.Comments = "";
                     isVerified = false;
                 }
-                if (!enabled && isBusinessHours && isEnableBusinessHours && isEnableNonBusinessHours)
-                {
-                    request.StatusId = (int)StatusEnum.Pending;
-                    request.Comments = "";
-                    isVerified = false;
-                }
-
                 if (enabled && !isBusinessHours && isEnableBusinessHours && isEnableNonBusinessHours)
                 {
                     request.StatusId = (int)StatusEnum.Pending;
@@ -257,64 +393,68 @@ IAuditTrail auditTrail)
                     request.Comments = "";
                     isVerified = false;
                 }
-
-
-                if (!enabled && !isBusinessHours && isEnableBusinessHours && isEnableNonBusinessHours)
-                {
-                    request.StatusId = (int)StatusEnum.Pending;
-                    request.Comments = "Meter send to admin for approval.";
-                    isVerified = false;
-                }
-                if (!enabled && !isBusinessHours && !isEnableBusinessHours && isEnableNonBusinessHours)
-                {
-                    request.StatusId = (int)StatusEnum.Pending;
-                    request.Comments = "Meter send to admin for approval.";
-                    isVerified = false;
-                }
-                if (!enabled && !isBusinessHours && isEnableBusinessHours && !isEnableNonBusinessHours)
-                {
-
-                    request.StatusId = (int)StatusEnum.Active;
-                    request.Comments = "";
-                    isVerified = false;
-                }
-                if (!enabled && !isBusinessHours && !isEnableBusinessHours && !isEnableNonBusinessHours)
-                {
-                    request.StatusId = (int)StatusEnum.Active;
-                    request.Comments = "";
-                    isVerified = false;
-                }
-
-                if (!enabled && !isBusinessHours && isEnableBusinessHours && isEnableNonBusinessHours)
-                {
-                    request.StatusId = (int)StatusEnum.Pending;
-                    request.Comments = "Meter send to admin for approval.";
-                    isVerified = false;
-                }
-                if (!enabled && !isBusinessHours && !isEnableBusinessHours && isEnableNonBusinessHours)
-                {
-                    request.StatusId = (int)StatusEnum.Pending;
-                    request.Comments = "Meter send to admin for approval.";
-                    isVerified = false;
-                }
-                if (!enabled && !isBusinessHours && isEnableBusinessHours && !isEnableNonBusinessHours)
-                {
-                    request.StatusId = (int)StatusEnum.Active;
-                    request.Comments = "";
-                    isVerified = false;
-                }
-                if (!enabled && !isBusinessHours && !isEnableBusinessHours && !isEnableNonBusinessHours)
-                {
-                    request.StatusId = (int)StatusEnum.Active;
-                    request.Comments = "";
-                    isVerified = false;
-                }
                 if (!enabled && isBusinessHours && !isEnableBusinessHours && !isEnableNonBusinessHours)
                 {
                     request.StatusId = (int)StatusEnum.Active;
                     request.Comments = "";
                     isVerified = false;
                 }
+                if (!enabled && !isBusinessHours && isEnableBusinessHours && isEnableNonBusinessHours)
+                {
+                    request.StatusId = (int)StatusEnum.Pending;
+                    request.Comments = "Meter send to admin for approval.";
+                    isVerified = false;
+                }
+                if (!enabled && !isBusinessHours && !isEnableBusinessHours && isEnableNonBusinessHours)
+                {
+                    request.StatusId = (int)StatusEnum.Pending;
+                    request.Comments = "Meter send to admin for approval.";
+                    isVerified = false;
+                }
+                if (!enabled && !isBusinessHours && isEnableBusinessHours && !isEnableNonBusinessHours)
+                {
+
+                    request.StatusId = (int)StatusEnum.Active;
+                    request.Comments = "";
+                    isVerified = false;
+                }
+                if (!enabled && !isBusinessHours && !isEnableBusinessHours && !isEnableNonBusinessHours)
+                {
+                    request.StatusId = (int)StatusEnum.Active;
+                    request.Comments = "";
+                    isVerified = false;
+                }
+                if (!enabled && !isBusinessHours && isEnableBusinessHours && isEnableNonBusinessHours)
+                {
+                    request.StatusId = (int)StatusEnum.Pending;
+                    request.Comments = "Meter send to admin for approval.";
+                    isVerified = false;
+                }
+                if (!enabled && !isBusinessHours && !isEnableBusinessHours && isEnableNonBusinessHours)
+                {
+                    request.StatusId = (int)StatusEnum.Pending;
+                    request.Comments = "Meter send to admin for approval.";
+                    isVerified = false;
+                }
+                if (!enabled && !isBusinessHours && isEnableBusinessHours && !isEnableNonBusinessHours)
+                {
+                    request.StatusId = (int)StatusEnum.Active;
+                    request.Comments = "";
+                    isVerified = false;
+                }
+                if (!enabled && !isBusinessHours && !isEnableBusinessHours && !isEnableNonBusinessHours)
+                {
+                    request.StatusId = (int)StatusEnum.Active;
+                    request.Comments = "";
+                    isVerified = false;
+                }
+
+                //if (!enabled && isBusinessHours && !isEnableBusinessHours && !isEnableNonBusinessHours)
+                //{
+                //    request.StatusId = (int)StatusEnum.Pending;
+                //    request.Comments = "Meter send to admin for approval.";
+                //    isVerified = false;
+                //}
 
                 if (enabled && isBusinessHours && isEnableBusinessHours && !isEnableNonBusinessHours)
                 {
@@ -328,7 +468,6 @@ IAuditTrail auditTrail)
                     request.Comments = "Meter send to admin for approval.";
                     isVerified = false;
                 }
-
                 if (enabled && isBusinessHours && !isEnableBusinessHours && isEnableNonBusinessHours)
                 {
                     request.StatusId = (int)StatusEnum.Active;
@@ -341,29 +480,13 @@ IAuditTrail auditTrail)
                     request.Comments = "";
                     isVerified = false;
                 }
-                if (!enabled && isBusinessHours && !isEnableBusinessHours && !isEnableNonBusinessHours)
+                if (!enabled && isBusinessHours && isEnableBusinessHours && isEnableNonBusinessHours)
                 {
-                    request.StatusId = (int)StatusEnum.Active;
+                    request.StatusId = (int)StatusEnum.Pending;
                     request.Comments = "";
                     isVerified = false;
                 }
 
-                var configurations = await _configurationRepository.GetConfigurations().ConfigureAwait(false);
-                if (configurations != null && configurations.Any(t => t.Name.ToLower().Equals("meterapproval")))
-                {
-                    var approvalConfig = configurations.FirstOrDefault(t => t.Name.ToLower().Equals("meterapproval"));
-                    if (approvalConfig != null && !string.IsNullOrEmpty(approvalConfig.Value) && approvalConfig.Value == "1")
-                    {
-                        request.StatusId = (int)StatusEnum.Pending;
-                        request.Comments = "Meter sent for admin approval";
-                    }
-                    else
-                    {
-                        request.StatusId = (int)StatusEnum.Active;
-                        request.Comments = "";
-                    }
-
-                }
             }
 
 
@@ -371,23 +494,7 @@ IAuditTrail auditTrail)
             {
                 var meter = await _meterRepository.GetMeterById(request.Id).ConfigureAwait(false);
 
-                var configurations = await _configurationRepository.GetConfigurations().ConfigureAwait(false);
-                if (configurations != null && configurations.Any(t => t.Name.ToLower().Equals("meterapproval")))
-                {
-                    var approvalConfig = configurations.FirstOrDefault(t => t.Name.ToLower().Equals("meterapproval"));
-                    if (approvalConfig != null && !string.IsNullOrEmpty(approvalConfig.Value) && approvalConfig.Value == "1")
-                    {
-                        if (meter.StatusId == (int)StatusEnum.Rejected)
-                            request.StatusId = (int)StatusEnum.Pending;
-                        request.Comments = "Meter sent for admin approval";
-                    }
-                    else
-                    {
-                        request.StatusId = (int)StatusEnum.Active;
-                        request.Comments = "";
-
-                    }
-                }
+               
 
                 if (currentTime >= fromBusinessHours && currentTime <= toBusinessHours)
                 {
@@ -700,8 +807,8 @@ IAuditTrail auditTrail)
             var propertyId = meter.PropertyId;
             int propId = await _propertyRepository.UpdateCustomerAgreementId(propertyId).ConfigureAwait(false);
 
-            if (_workContext.CurrentRoleId == (int)RoleMasterEnum.Admin || _workContext.CurrentRoleId == (int)RoleMasterEnum.Operator)
-            {
+            //if (_workContext.CurrentRoleId == (int)RoleMasterEnum.Admin || _workContext.CurrentRoleId == (int)RoleMasterEnum.Operator)
+            //{
                 objAudit.AddedBy = _workContext.CurrentUserId;
                 objAudit.Action = "Update Property CustomerAgreementId(";
                 objAudit.ActionTable = "ohd_property";
@@ -709,7 +816,7 @@ IAuditTrail auditTrail)
                 objAudit.StatusId = (int)StatusEnum.Inactive;
                 objAudit.UpdatedId = propId;
                 await _auditTrail.AuditTrail(objAudit).ConfigureAwait(false);
-            }
+           // }
             await _meterRepository.DeleteMeterById(request.Id).ConfigureAwait(false);
 
             AddOrUpdateNotificationsQuery newNotification = new AddOrUpdateNotificationsQuery
@@ -722,8 +829,8 @@ IAuditTrail auditTrail)
 
             };
 
-            if (_workContext.CurrentRoleId == (int)RoleMasterEnum.Admin || _workContext.CurrentRoleId == (int)RoleMasterEnum.Operator)
-            {
+            //if (_workContext.CurrentRoleId == (int)RoleMasterEnum.Admin || _workContext.CurrentRoleId == (int)RoleMasterEnum.Operator)
+            //{
                 objAudit.AddedBy = _workContext.CurrentUserId;
                 objAudit.Action = "Delete Meter";
                 objAudit.ActionTable = "ohd_meter";
@@ -731,7 +838,7 @@ IAuditTrail auditTrail)
                 objAudit.StatusId = (int)StatusEnum.Inactive;
                 objAudit.UpdatedId = request.Id;
                 await _auditTrail.AuditTrail(objAudit).ConfigureAwait(false);
-            }
+            //}
             await _notificationRepository.AddNotifications(newNotification).ConfigureAwait(false);
 
             return "Meter deleted successfully!";
@@ -789,17 +896,18 @@ IAuditTrail auditTrail)
 
             };
 
-
             await _notificationRepository.AddNotifications(newNotification).ConfigureAwait(false);
             string reason = "";
             string mailBody = "";
             string approvalStatus = "";
             var user = await _userRepository.GetUserByMeterId(request.MeterID).ConfigureAwait(false);
             var companyDetails = await _companyHelper.GetCompany(_workContext.CurrentCompanyId).ConfigureAwait(false);
-            var emailTemplates = await _emailTemplateRepository.GetEmailTemplates().ConfigureAwait(false);
-            var welcomeEmail = new EmailTemplateDto();
+            // var emailTemplates = await _emailTemplateRepository.GetEmailTemplates().ConfigureAwait(false);
+            // var welcomeEmail = new EmailTemplateDto();
+          
             if (result > 0)
             {
+
                 response.Id = result;
                 if (result == 0)
                     response.Message = "Something Went wrong!";
@@ -817,65 +925,23 @@ IAuditTrail auditTrail)
                     if (user != null && !string.IsNullOrEmpty(user.DeviceToken) && user.DeviceToken != "string")
                     {
                         await _pushNotification.SendMessage(newNotification.Title, newNotification.Description, user.DeviceToken, user.Id).ConfigureAwait(false);
-
                     }
-                    if (!request.IsApproved)
+                    if (!request.IsApproved && !request.IsChecked)
                     {
                         approvalStatus = "rejected";
-                        welcomeEmail = emailTemplates.FirstOrDefault(g => g.Name.Equals("Approve Meter"));
-                        if (user != null)
-                        {
-                            if (!string.IsNullOrEmpty(welcomeEmail.Html))
-                            {
-                                var model = new PropertyUserWelcomeEmailDto
-                                {
-                                    CompanyName = companyDetails.Name,
-                                    FirstName = user.FirstName,
-                                    Email = user.Email,
-                                    Mobile = user.Mobile,
-                                    companyEmail = companyDetails.Email,
-                                    Domain = companyDetails.Domain,
-                                    companyLogo = companyDetails.RelativeUrl,
-                                    MeterNumber = meter.MeterNumber,
-                                    ApprovalStatus = approvalStatus,
-                                    RejectReason = request.Comments,
-                                };
-                                var template = Template.Parse(welcomeEmail.Html);
-                                welcomeEmail.Html = template.Render(model, memberRenamer: member => member.Name);
-                            }
-                            mailBody = welcomeEmail.Html;
-                        }
-
                         reason = "Rejection reason: " + request.Comments;
-                        //mailBody = "Your meter  mumber " + meter.MeterNumber + " is " + approvalStatus + "/" + reason;
-
+                        mailBody = "Your meter  mumber " + meter.MeterNumber + " is " + approvalStatus + "/" + reason;
+                    }
+                    if (!request.IsApproved && request.IsChecked)
+                    {
+                        approvalStatus = "deactivated/deleetd";
+                        reason = "Rejection reason: " + request.Comments;
+                        mailBody = "Your meter  mumber " + meter.MeterNumber + " is " + approvalStatus + "/" + reason;
                     }
                     if (request.IsApproved)
                     {
                         approvalStatus = "approved";
-                        welcomeEmail = emailTemplates.FirstOrDefault(g => g.Name.Equals("Approve Meter"));
-                        if (user != null)
-                        {
-                            if (!string.IsNullOrEmpty(welcomeEmail.Html))
-                            {
-                                var model = new PropertyUserWelcomeEmailDto
-                                {
-                                    CompanyName = companyDetails.Name,
-                                    FirstName = user.FirstName,
-                                    Email = user.Email,
-                                    Mobile = user.Mobile,
-                                    companyEmail = companyDetails.Email,
-                                    Domain = companyDetails.Domain,
-                                    companyLogo = companyDetails.RelativeUrl,
-                                    MeterNumber = meter.MeterNumber,
-                                    ApprovalStatus = approvalStatus,
-                                };
-                                var template = Template.Parse(welcomeEmail.Html);
-                                welcomeEmail.Html = template.Render(model, memberRenamer: member => member.Name);
-                            }
-                            mailBody = welcomeEmail.Html;
-                            //mailBody = "Your meter  mumber  " + meter.MeterNumber + " is " + approvalStatus;
-                        }
+                        mailBody = "Your meter  mumber  " + meter.MeterNumber + " is " + approvalStatus;
                     }
                     if (user != null)
                     {
@@ -884,7 +950,7 @@ IAuditTrail auditTrail)
 
                             title = "Meter request " + approvalStatus,
                             email = user.Email,
-                            forEvent = "MeterStatus",
+                            forEvent = "MeterStatusUpdated",
                             subtitle = "",
                             mobile = user.Mobile,
                             propertyUser = user.UserName,
@@ -893,9 +959,21 @@ IAuditTrail auditTrail)
                             companyId = user.CompanyId
                         };
                         await _otpService.SendEventMail(obj).ConfigureAwait(false);
+                        AddOrUpdateNotificationsQuery newUserNotification = new AddOrUpdateNotificationsQuery
+                        {
+                            UserID = user.Id,
+                            Title = "Meter request " + approvalStatus,
+                            Description = "Your meter  mumber " + meter.MeterNumber + " is " + approvalStatus,
+                            IsRead = (int)StatusEnum.Sent,
+                            NotificationType = (int)NotificationType.Updated,
+
+                        };
+                        await _notificationRepository.AddNotifications(newUserNotification).ConfigureAwait(false);
                     }
                 }
+                ;
 
+                response.Message = "Meter status updated successfully!";
             }
             response.Message = "Meter status updated successfully!";
 
@@ -1030,9 +1108,6 @@ IAuditTrail auditTrail)
                         obj.Comment = "";
                         isVerified = false;
                     }
-
-
-
                     if (enabled && !isBusinessHours && isEnableBusinessHours && isEnableNonBusinessHours)
                     {
                         obj.StatusId = (int)StatusEnum.Pending;
@@ -1064,7 +1139,6 @@ IAuditTrail auditTrail)
                         obj.Comment = "";
                         isVerified = false;
                     }
-
                     if (!enabled && !isBusinessHours && isEnableBusinessHours && isEnableNonBusinessHours)
                     {
                         obj.StatusId = (int)StatusEnum.Pending;
@@ -1090,7 +1164,6 @@ IAuditTrail auditTrail)
                         obj.Comment = "";
                         isVerified = false;
                     }
-
                     if (!enabled && !isBusinessHours && isEnableBusinessHours && isEnableNonBusinessHours)
                     {
                         obj.StatusId = (int)StatusEnum.Pending;
@@ -1135,7 +1208,6 @@ IAuditTrail auditTrail)
                         obj.Comment = "Meter send to admin for approval.";
                         isVerified = false;
                     }
-
                     if (enabled && isBusinessHours && !isEnableBusinessHours && isEnableNonBusinessHours)
                     {
                         obj.StatusId = (int)StatusEnum.Active;

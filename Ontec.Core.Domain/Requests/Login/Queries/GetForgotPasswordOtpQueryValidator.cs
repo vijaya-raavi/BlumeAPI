@@ -18,9 +18,16 @@ namespace Ontec.Core.Domain.Requests.Login.Queries
            {
                int userStatus = await _userRepository.GetUserStatus(model.EmailMobile.ToLower(), model.CompanyId).ConfigureAwait(false);
                var user = await _userRepository.IsUserPending(model.EmailMobile, model.CompanyId).ConfigureAwait(false);
-               if (userStatus.Equals((int)StatusEnum.Pending))
+               var role = await _userRepository.GetUserRoleByEmailMobile(model.EmailMobile,model.CompanyId).ConfigureAwait(false);
+
+
+               if (userStatus.Equals((int)StatusEnum.Pending) && role==(int)RoleMasterEnum.Customer)
                {
                    context.AddFailure(nameof(ResetPassword.EmailMobile), "Your registration request is sent to admin for approval");
+               }
+               if (userStatus.Equals((int)StatusEnum.Pending) && role == (int)RoleMasterEnum.Temporary)
+               {
+                   context.AddFailure(nameof(ResetPassword.EmailMobile), "Please signup in the system");
                }
                if (userStatus.Equals((int)StatusEnum.Inactive))
                {

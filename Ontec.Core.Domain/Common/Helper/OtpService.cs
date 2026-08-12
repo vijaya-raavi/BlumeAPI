@@ -1,11 +1,8 @@
-﻿using System.Diagnostics.Tracing;
-using System.Net;
+﻿using System.Net;
 using System.Net.Mail;
-using System.Net.Mime;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
-using Ontec.Core.Domain.Interface.MasterApiService;
 using Ontec.Core.Domain.Models;
 using Ontec.Core.Domain.Models.Dto.Common;
 
@@ -62,12 +59,41 @@ namespace Ontec.Core.Domain.Common.Helper
                 mailContent += @"</td></tr><tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>
                                 <br>" + body + "<br> Reason: " + subtitle + @"<br>Kindly contact the Administratior for more details.</td></tr>";
             }
+            if (evt == "MeterStatusUpdated")
+            {
+
+                string reasonPart = "";
+                string mainBody = "";
+                if (body.Contains("/"))
+                {
+                    string[] parts = body.Split("/");
+
+                    // Extracting both parts
+                    mainBody = parts[0].Trim(); // "Meter Number: XXX : Approved" or "Meter Number: XXX : Rejected"
+                    reasonPart = parts[1].Trim();
+                }
+                else
+                {
+                    mainBody = body;
+                }
+                mailContent = @"<tr><td align='center' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>" + subtitle;
+                mailContent += @"</td></tr><br>";
+
+
+                mailContent += @"<tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-left: 6.25%; padding-right: 6.25%;' class='list-item'>
+                                    <table align='center' border='0' cellspacing='0' cellpadding='0' style='width: inherit; margin: 0; padding: 0; border-collapse: collapse; border-spacing: 0;'>
+                                    <tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>Hi " + propertyUser + "," + @"</td></tr>";
+                mailContent += @"<tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>" + mainBody + @".</td></tr>";
+                mailContent += @"<tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>" + reasonPart + @"</td></tr>";
+            }
+
             if (evt == "ApproveUser")
             {
+
                 mailContent = @"<tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-left: 6.25%; padding-right: 6.25%;' class='list-item'>
                                     <table align='center' border='0' cellspacing='0' cellpadding='0' style='width: inherit; margin: 0; padding: 0; border-collapse: collapse; border-spacing: 0;'>
-                                    <tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>";
-                mailContent += @"<br>" + body ;
+                                    <tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>Hi " + propertyUser + ",";
+                mailContent += @"<br>" + body + "<br>Your request was approved.</td></tr>";
             }
             if (evt == "MeterStatus")
             {
@@ -99,12 +125,12 @@ namespace Ontec.Core.Domain.Common.Helper
 
             if (evt == "newUser")
             {
-                //mailContent = @"<tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-left: 6.25%; padding-right: 6.25%;' class='list-item'>
-                //                    <table align='center' border='0' cellspacing='0' cellpadding='0' style='width: inherit; margin: 0; padding: 0; border-collapse: collapse; border-spacing: 0;'>
-                //                    <tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>You are successfully registered into  " + companyName + " .";
-                //mailContent += @"<br>Kindly update your profile to proceed.</td></tr>";
+                mailContent = @"<tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-left: 6.25%; padding-right: 6.25%;' class='list-item'>
+                                    <table align='center' border='0' cellspacing='0' cellpadding='0' style='width: inherit; margin: 0; padding: 0; border-collapse: collapse; border-spacing: 0;'>
+                                    <tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>You are successfully registered into  " + companyName + " .";
+                mailContent += @"<br>Kindly update your profile to proceed.</td></tr>";
 
-                mailContent += body;
+                //mailContent += body;
             }
 
             if (evt == "ResetPassword")
@@ -130,14 +156,14 @@ namespace Ontec.Core.Domain.Common.Helper
             }
             if (evt == "PasswordChanged")
             {
-                mailContent += body;
-                //mailContent = @"<tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-left: 6.25%; padding-right: 6.25%;' class='list-item'>
-                //                    <table align='center' border='0' cellspacing='0' cellpadding='0' style='width: inherit; margin: 0; padding: 0; border-collapse: collapse; border-spacing: 0;'>
-                //                    <tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>Hi " + propertyUser;
-                //mailContent += @", </td></tr>";
+                //mailContent += body;
+                mailContent = @"<tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-left: 6.25%; padding-right: 6.25%;' class='list-item'>
+                                    <table align='center' border='0' cellspacing='0' cellpadding='0' style='width: inherit; margin: 0; padding: 0; border-collapse: collapse; border-spacing: 0;'>
+                                    <tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>Hi " + propertyUser;
+                mailContent += @", </td></tr>";
 
-                //mailContent += @"<tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>You  Ontec Home password changed successfully";
-                //mailContent += @"</td></tr>";
+                mailContent += @"<tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>"+body;
+                mailContent += @"</td></tr>";
             }
             if (evt == "Deregister")
             {
@@ -147,7 +173,7 @@ namespace Ontec.Core.Domain.Common.Helper
                                     <tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>Hi,";
                 mailContent += @"</td></tr><br>";
 
-                mailContent += @"<tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>You have not logged into your  " + companyName + @" Profile for more than 180 days, as a consequence, your profile will be deregistered.
+                mailContent += @"<tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>You have not logged into your  " + companyName + @" Profile for more than year , as a consequence, your profile is  deactivated.
                                 <br>Please contact the Administrator if access is still required.</td></tr>";
             }
             if (evt == "AccountDelete")
@@ -174,14 +200,14 @@ namespace Ontec.Core.Domain.Common.Helper
             }
             if (evt == "SuccessFullLogin")
             {
-                mailContent = body;
-                //    mailContent = @"<tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-left: 6.25%; padding-right: 6.25%;' class='list-item'>
-                //                        <table align='center' border='0' cellspacing='0' cellpadding='0' style='width: inherit; margin: 0; padding: 0; border-collapse: collapse; border-spacing: 0;'>
-                //                        <tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>Hi " + propertyUser + ",";
-                //    mailContent += @"</td></tr><br>";
 
-                //    mailContent += @"<tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>You have logged into your " + companyName + @" Profile.
-                //                       <br>Please report suspicious activity to the Administrator if it is not you that logged in.</td></tr>";
+                mailContent = @"<tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-left: 6.25%; padding-right: 6.25%;' class='list-item'>
+                                    <table align='center' border='0' cellspacing='0' cellpadding='0' style='width: inherit; margin: 0; padding: 0; border-collapse: collapse; border-spacing: 0;'>
+                                    <tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>Hi " + propertyUser + ",";
+                mailContent += @"</td></tr><br>";
+
+                mailContent += @"<tr><td align='left' valign='top' style='border-collapse: collapse; border-spacing: 0; padding: 0; padding-bottom: 3px;padding-top: 5px; padding-right: 20px;'>You have logged into your " + companyName + @" Profile.
+                                   <br>Please report suspicious activity to the Administrator if it is not you that logged in.</td></tr>";
             }
             if (evt == "FailedLoginAttempt")
             {
@@ -317,6 +343,10 @@ namespace Ontec.Core.Domain.Common.Helper
             {
                 subject = companyName + " - Notification of Profile deactivation";
             }
+            if (evt == "MeterStatusUpdated")
+            {
+                subject = "Meter status update ";
+            }
             if (evt == "DownloadStatement")
             {
                 subject = companyName + " - Find Transaction Statement";
@@ -432,8 +462,8 @@ namespace Ontec.Core.Domain.Common.Helper
                                         }
                                      a, a:hover { color: #127DB3; }
                                     .footer a, .footer a:hover { color: #999999; }</style></head>";
-                if (obj.forEvent == "ResetPassword" || obj.forEvent == "SigUpOTP" || obj.forEvent == "ApproveUser")
-                {
+                //if (obj.forEvent == "ResetPassword" || obj.forEvent == "SigUpOTP" || obj.forEvent == "ApproveUser")
+                //{
                     string logo = @"<body topmargin='0' rightmargin='0' bottommargin='0' leftmargin='0' marginwidth='0' marginheight='0' width='100%' style='border-collapse: collapse; border-spacing: 0; margin: 0; padding: 0;padding-bottom:20px; width: 100%; height: 100%; -webkit-font-smoothing: antialiased; text-size-adjust: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; line-height: 100%; background-color: #f0f0f0; color: #000000;' bgcolor='#f0f0f0' text='#000000'>
                                      <table width='100%' align='center' border='0' cellpadding='0' cellspacing='0' style='border-collapse: collapse; border-spacing: 0; margin: 0; padding: 0; width: 100%;' class='background'><tr><td align='center' valign='top' style='border-collapse: collapse; border-spacing: 0; margin: 0; padding: 0;' bgcolor='#f0f0f0'>
                                         <table border='0' cellpadding='0' cellspacing='0' align='center' width='560' style='border-collapse: collapse; border-spacing: 0; padding: 0; width: inherit; max-width: 560px;' class='wrapper'>
@@ -452,15 +482,15 @@ namespace Ontec.Core.Domain.Common.Helper
                     //if (forevent == "new invite")
                     //{
                     //    footer += @"<tr><td align='center' valign='top' style='border-collapse: collapse; border-spacing: 0; margin: 0; padding: 0; padding-left: 6.25%; padding-right: 6.25%; width: 87.5%; padding-top: 30px; padding-bottom: 35px;' class='button'>
-                    //                    <a href='https://mhuatfe.ontec.co.za/' target='_blank' style='text-decoration: underline;'>
+                    //                    <a href='https://blumefe.ontec.co.za/' target='_blank' style='text-decoration: underline;'>
                     //                    <table border='0' cellpadding='0' cellspacing='0' align='center' style='max-width: 240px; min-width: 120px; border-collapse: collapse; border-spacing: 0; padding: 0;'>
                     //                     <tr><td align='center' valign='middle' style='padding: 12px 24px; margin: 0; text-decoration: underline; border-collapse: collapse; border-spacing: 0; border-radius: 4px; -webkit-border-radius: 4px; -moz-border-radius: 4px; -khtml-border-radius: 4px;' bgcolor='#127db3'>
-                    //                     <a target='_blank' style='text-decoration: underline;color: #ffffff; font-family: sans-serif; font-size: 17px; font-weight: 400; line-height: 120%;' href='https://mhuatfe.ontec.co.za/'>sign up</a>
+                    //                     <a target='_blank' style='text-decoration: underline;color: #ffffff; font-family: sans-serif; font-size: 17px; font-weight: 400; line-height: 120%;' href='https://blumefe.ontec.co.za/'>sign up</a>
                     //                     </td></tr></table></a></td></tr></table></td></tr><tr>";
                     //}
 
                     footer += @"<td align='center' valign='top' style='border-collapse: collapse; border-spacing: 0; margin: 0; padding: 0; padding-left: 6.25%; padding-right: 6.25%;  width: 87.5%; font-size: 17px; font-weight: 400; line-height: 160%; padding-top: 20px; padding-bottom: 25px; color: #000000; font-family: sans-serif;' class='paragraph'>
-                                     for more details visit: <a href='https://mhuatfe.ontec.co.za/' target='_blank' style='color: #127db3; font-family: sans-serif; font-size: 17px; font-weight: 400; line-height: 160%;'>our website</a>
+                                     for more details visit: <a href='https://blumefe.ontec.co.za/' target='_blank' style='color: #127db3; font-family: sans-serif; font-size: 17px; font-weight: 400; line-height: 160%;'>our website</a>
                                      </td></tr></table></td></tr></table></body></html>";
                     using (MailMessage mail = new MailMessage())
                     {
@@ -484,54 +514,54 @@ namespace Ontec.Core.Domain.Common.Helper
                             smtp.Send(mail);
                         }
                     }
-                }
-                else
-                {
-                    string htmlFull = head + style + mailContent;
+               // }
+                //else
+                //{
+                //    string htmlFull = head + style + mailContent;
 
-                    // Step 1️⃣: Extract base64 images and replace with cid:
-                    var imgs = HtmlBase64Extractor.ExtractBase64Images(ref htmlFull);
-                    using (MailMessage mail = new MailMessage())
-                    {
-                        mail.From = new MailAddress(emailFromAddress);
-                        mail.To.Add(emailToAddress);
-                        mail.Subject = subject;
-                        if (obj.forEvent == "RejectUser" || obj.forEvent == "ApproveUser")
-                        {
-                            mail.Body = head + style + mailContent;
-                        }
-                        else
-                        {
-                            mail.Body = head + style + mailContent;
-                        }
-                        mail.IsBodyHtml = true;
+                //    // Step 1️⃣: Extract base64 images and replace with cid:
+                //    var imgs = HtmlBase64Extractor.ExtractBase64Images(ref htmlFull);
+                //    using (MailMessage mail = new MailMessage())
+                //    {
+                //        mail.From = new MailAddress(emailFromAddress);
+                //        mail.To.Add(emailToAddress);
+                //        mail.Subject = subject;
+                //        if (obj.forEvent == "RejectUser" || obj.forEvent == "ApproveUser")
+                //        {
+                //            mail.Body = head + style + mailContent;
+                //        }
+                //        else
+                //        {
+                //            mail.Body = head + style + mailContent;
+                //        }
+                //        mail.IsBodyHtml = true;
 
-                        var htmlView = AlternateView.CreateAlternateViewFromString(htmlFull, null, MediaTypeNames.Text.Html);
+                //        var htmlView = AlternateView.CreateAlternateViewFromString(htmlFull, null, MediaTypeNames.Text.Html);
 
-                        // Step 3️⃣: Add all images as linked resources
-                        foreach (var img in images)
-                        {
-                            byte[] bytes = Convert.FromBase64String(img.Base64Data);
-                            var ms = new MemoryStream(bytes); // No "using" here!
-                            var lr = new LinkedResource(ms, img.MimeType)
-                            {
-                                ContentId = img.ContentId,
-                                TransferEncoding = TransferEncoding.Base64
-                            };
-                            htmlView.LinkedResources.Add(lr);
-                        }
+                //        // Step 3️⃣: Add all images as linked resources
+                //        foreach (var img in images)
+                //        {
+                //            byte[] bytes = Convert.FromBase64String(img.Base64Data);
+                //            var ms = new MemoryStream(bytes); // No "using" here!
+                //            var lr = new LinkedResource(ms, img.MimeType)
+                //            {
+                //                ContentId = img.ContentId,
+                //                TransferEncoding = TransferEncoding.Base64
+                //            };
+                //            htmlView.LinkedResources.Add(lr);
+                //        }
 
-                        mail.AlternateViews.Add(htmlView);
+                //        mail.AlternateViews.Add(htmlView);
 
-                        using (SmtpClient smtp = new SmtpClient(smtpAddress, portNumber))
-                        {
-                            smtp.Credentials = new NetworkCredential(emailFromAddress, password);
-                            smtp.EnableSsl = enableSSL;
-                            smtp.UseDefaultCredentials = false;
-                            smtp.Send(mail);
-                        }
-                    }
-                }
+                //        using (SmtpClient smtp = new SmtpClient(smtpAddress, portNumber))
+                //        {
+                //            smtp.Credentials = new NetworkCredential(emailFromAddress, password);
+                //            smtp.EnableSsl = enableSSL;
+                //            smtp.UseDefaultCredentials = false;
+                //            smtp.Send(mail);
+                //        }
+                //    }
+                //}
             }
             catch (Exception ex)
             {
@@ -555,8 +585,10 @@ namespace Ontec.Core.Domain.Common.Helper
 
             string Username = "itronenergy";
             string Password = "gl@d1at0r";
-            body = "Your OTP is:" + otp + " requested on " + DateTime.UtcNow.Date + " at " + timeOnly;
-
+            if (body == null)
+            {
+                body = "Your OTP is:" + otp + " requested on " + DateTime.UtcNow.Date + " at " + timeOnly;
+            }
 
 
             //string myData = "{to: \"+27634004746\", body:\""+body+"\"}";

@@ -78,7 +78,7 @@ IGenericRepository genericRepository)
                 {
                     var meterUrl = _masterApiSetting.BaseUrl + _masterApiSetting.MeterNumberApi + "?meter.meterNum=" + m.MeterNumber.ToUpper() + "&paging=(limit)(5)(offset)(0)";
                     var meterResult = await _masterApiConnectService.GetMeter(meterUrl).ConfigureAwait(false);
-                    if (meterResult != null)
+                    if (meterResult != null && meterResult.Data.Count()>0)
                     {
                         var meterId = meterResult.Data[0].Meter.Id;
                         MeterType type = meterResult.Data[0].Meter.Type;
@@ -165,14 +165,20 @@ IGenericRepository genericRepository)
             if (!validatorResult.IsValid)
                 throw new ValidationException(validatorResult.Errors);
             string utilityType = "";
+            string utilityName = "";
             var meterUrl = _masterApiSetting.BaseUrl + _masterApiSetting.MeterNumberApi + "?meter.meterNum=" + request.MeterNumber.ToUpper() + "&paging=(limit)(5)(offset)(0)";
             var meterResult = await _masterApiConnectService.GetMeter(meterUrl).ConfigureAwait(false);
             if (meterResult != null)
             {
                 utilityType = meterResult.Data[0].Meter.Model.ServiceResource;
+                utilityName = meterResult.Data[0].Meter.Model.Name;
             }
             var meterTypes = await _meterRepository.GetMeterType().ConfigureAwait(false);
             var utility = meterTypes.FirstOrDefault(t => t.name.ToUpper().Contains(utilityType));
+            if (utilityName.Contains("SMART HOT_WATER"))
+            {
+                utilityType = "HOT WATER";
+            }
             var result = new AddUpdateResultDto();
             if (utility != null)
 
@@ -277,13 +283,19 @@ IGenericRepository genericRepository)
                         {
 
                             string utiltyType = "";
+                            string utilityName = "";
                             var meterUrlUtility = _masterApiSetting.BaseUrl + _masterApiSetting.MeterNumberApi + "?meter.meterNum=" + meterNumber.ToUpper() + "&paging=(limit)(5)(offset)(0)";
                             var meterUtilityResult = await _masterApiConnectService.GetMeter(meterUrlUtility).ConfigureAwait(false);
 
                             if (meterUtilityResult != null)
                             {
                                 utiltyType = meterUtilityResult.Data[0].Meter.Model.ServiceResource;
+                                utilityName = meterUtilityResult.Data[0].Meter.Model.Name;
                                 var utility = meterTypes.FirstOrDefault(t => t.name.ToUpper().Contains(utiltyType));
+                                if (utilityName.Contains("SMART HOT_WATER"))
+                                {
+                                    utiltyType = "HOT WATER";
+                                }
                                 if (utility != null)
 
                                 {

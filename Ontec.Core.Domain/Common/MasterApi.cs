@@ -16,6 +16,9 @@ namespace Ontec.Core.Domain.Common
         [JsonPropertyName("auxAccountApi")]
         public string AuxAccountApi { get; set; }
 
+        [JsonPropertyName("auxChargeScheduleApi")]
+        public string AuxChargeScheduleApi { get; set; }
+
         [JsonPropertyName("accountTransApi")]
         public string AccountTransApi { get; set; }
 

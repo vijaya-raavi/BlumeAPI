@@ -84,13 +84,13 @@ namespace Ontec.Core.Domain.Requests.Meter.Queries
                     {
                         var existingmeterUrl = _masterApiSetting.BaseUrl + _masterApiSetting.MeterNumberApi + "?meter.meterNum=" + firstMeter.MeterNumber.ToUpper() + "&paging=(limit)(5)(offset)(0)";
                         var existingmeterResult = await _masterApiConnectService.GetMeter(existingmeterUrl).ConfigureAwait(false);
-                        if (existingmeterResult != null)
+                        if (existingmeterResult != null && existingmeterResult.Data.Count()>0)
                         {
                             existingmastercustomerAgreementId = existingmeterResult.Data[0].CustomerAgreement.Id.ToString();
                         }
                         var newmeterUrl = _masterApiSetting.BaseUrl + _masterApiSetting.MeterNumberApi + "?meter.meterNum=" + model.MeterNumber.ToUpper() + "&paging=(limit)(5)(offset)(0)";
                         var newmeterResult = await _masterApiConnectService.GetMeter(newmeterUrl).ConfigureAwait(false);
-                        if (newmeterResult != null)
+                        if (newmeterResult != null && newmeterResult.Data.Count()>0)
                         {
                             newmastercustomerAgreementId = newmeterResult.Data[0].CustomerAgreement.Id.ToString();
                         }

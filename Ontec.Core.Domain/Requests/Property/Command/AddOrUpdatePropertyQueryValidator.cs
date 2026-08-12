@@ -54,13 +54,6 @@ namespace Ontec.Core.Domain.Requests.Property.Command
                     if (!isValid)
                         context.AddFailure(nameof(AddOrUpdatePropertyQuery.OwnerId), "Owner id does not exist");
 
-                    if (user.IsEstateEnable=="1")
-                    {
-                        if (model.EstateId == 0)
-                        {
-                            context.AddFailure(nameof(AddOrUpdatePropertyQuery.EstateId), "Estate id does not exist");
-                        }
-                    }
 
                 }
                 else
@@ -73,13 +66,6 @@ namespace Ontec.Core.Domain.Requests.Property.Command
                     if (existingProperty.OwnerId != model.OwnerId)
                     {
                         context.AddFailure(nameof(AddOrUpdatePropertyQuery.OwnerId), "Owner id is invalid");
-                    }
-                    if (user.IsEstateEnable == "1")
-                    {
-                        if (model.EstateId == 0)
-                        {
-                            context.AddFailure(nameof(AddOrUpdatePropertyQuery.EstateId), "Estate id does not exist");
-                        }
                     }
                 }
             });

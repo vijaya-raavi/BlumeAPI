@@ -48,7 +48,7 @@ namespace Ontec.Core.Application.Consumer.Queries
         {
          // return await _consumerRepository.GetConsumerMasters().ConfigureAwait(false);
 
-            return await _consumerRepository.NewGetConsumerMaster(request.EstateId).ConfigureAwait(false);
+            return await _consumerRepository.NewGetConsumerMaster().ConfigureAwait(false);
         }
         public async Task<IEnumerable<ConsumerGroupDto>> Handle(GetConsumerGroupQueryRequest request, CancellationToken cancellationToken)
         {

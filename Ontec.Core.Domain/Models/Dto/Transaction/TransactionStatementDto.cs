@@ -10,7 +10,7 @@
         public decimal Units { get; set; }
         public string Tariff { get; set; }
 
-        
+        public string TransactionItemType { get; set; }
     }
 
     public class TransactionData

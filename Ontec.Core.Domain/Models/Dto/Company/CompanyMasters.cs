@@ -6,5 +6,6 @@ namespace Ontec.Core.Domain.Models.Dto.Company
     {
         public IEnumerable<OntecSelectListItem>? CountryList { get; set; }
         public IEnumerable<OntecSelectListItem>? StateList { get; set; }
+        public IEnumerable<OntecSelectListItem>? PaymentGateWays { get; set; }
     }
 }

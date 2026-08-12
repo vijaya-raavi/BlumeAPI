@@ -8,9 +8,11 @@ using Ontec.Core.Domain.Interface.Communication;
 using Ontec.Core.Domain.Interface.User;
 using Ontec.Core.Domain.Models;
 using Ontec.Core.Domain.Models.Dto;
+using Ontec.Core.Domain.Models.Dto.Biometric;
 using Ontec.Core.Domain.Models.Dto.Login;
 using Ontec.Core.Domain.Models.Dto.Meter;
 using Ontec.Core.Domain.Models.Dto.User;
+using Ontec.Core.Domain.Requests.BiometricVerification.Command;
 using Ontec.Core.Domain.Requests.Login.Command;
 using Ontec.Core.Domain.Requests.Login.Queries;
 using Ontec.Core.Domain.Requests.Operator.Command;
@@ -139,6 +141,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.UserRepository
                                 ,con.version AS TermsConditionsCurrentVersion
                                 ,config.value as IsWallet
                                 ,conf.value as IsEstateEnable
+                                ,auxconf.value As auxaccountdetails
 								FROM ohd_user as u
                           JOIN ohd_user_role_master as ur on u.role_id =ur.id
 						  LEFT JOIN public.ohd_mobile_country_code as mc  on u.mobile_country_code=mc.id
@@ -151,9 +154,11 @@ namespace Ontec.Infrastructure.Persistence.Repositories.UserRepository
                           LEFT JOIN public.ohd_content AS con ON  u.company_id=con.company_id  
 						  LEFT JOIN public.ohd_configuration AS config ON u.company_id=config.company_id
                         LEFT JOIN public.ohd_configuration AS conf ON u.company_id=con.company_id
+                         LEFT JOIN public.ohd_configuration AS auxconf ON u.company_id=con.company_id
                           WHERE u.id=@userId and con.content_name='terms_conditions' 
 						  AND
-						  config.name  ='iswallet'  AND conf.name='isestateenable'  ";
+						  config.name  ='iswallet'  AND conf.name='isestateenable' 
+                            AND auxconf.name='auxaccountdetails'  ";
                 var parameters = new DynamicParameters();
                 parameters.Add("@userId", id);
                 parameters.Add("@Rejected", (int)StatusEnum.Rejected);
@@ -305,10 +310,16 @@ namespace Ontec.Infrastructure.Persistence.Repositories.UserRepository
         }
         public async Task<int> IsUserTemporary(string emialMobile)
         {
-            var sQuery = @"SELECT id
-                            FROM ohd_user  
-                          WHERE (lower(email)=@Email or mobile =@Email) and role_id=@Temporary";
-            var parameters = new DynamicParameters();
+            var sQuery = @"SELECT COALESCE(
+                            (
+                                SELECT id
+                                FROM ohd_user  
+                                WHERE (lower(email)=@Email or mobile =@Email)AND role_id = @Temporary
+                                LIMIT 1
+                            ),
+                            0
+                        ) AS id";
+            var parameters = new DynamicParameters(); 
             parameters.Add("@Email", emialMobile.ToLower());
             parameters.Add("@Temporary", (int)RoleMasterEnum.Temporary);
 
@@ -1176,7 +1187,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.UserRepository
             var parameters = new DynamicParameters();
             parameters.Add("@EmailMobile", emailMobile);
             parameters.Add("@CompanyId", companyId);
-            parameters.Add("@Active", (int)StatusEnum.Pending);
+            parameters.Add("@Pending", (int)StatusEnum.Pending);
             try
             {
                 return await _genericRepository.GetFirstOrDefaultAsync<int>(sQuery, parameters).ConfigureAwait(false);
@@ -1483,9 +1494,10 @@ namespace Ontec.Infrastructure.Persistence.Repositories.UserRepository
         }
         public async Task<int> GetUserStatus(string emailMobile, int companyId)
         {
-            var sQuery = @"SELECT status_id FROM ohd_user  
+            var sQuery = @"SELECT status_id FROM public.ohd_user  
                           WHERE (lower(email)=@Email OR mobile=@Email) AND company_id=@CompanyId
-                            AND  status_id=@Active";
+                           -- AND  status_id=@Active
+";
             var parameters = new DynamicParameters();
             parameters.Add("@Email", emailMobile.ToLower());
             parameters.Add("@CompanyId", companyId);
@@ -1505,6 +1517,8 @@ namespace Ontec.Infrastructure.Persistence.Repositories.UserRepository
             var result = await _genericRepository.ExecuteScalarAsync<int>(sQuery, parameters).ConfigureAwait(false);
             return result;
         }
+
+
         #region DeactiveUser
         public async Task DeActiveUserById(int userId)
         {
@@ -1864,6 +1878,127 @@ namespace Ontec.Infrastructure.Persistence.Repositories.UserRepository
 
             var result = await _genericRepository.GetAsync<int>(sQuery, parameters).ConfigureAwait(false);
             return result;
+        }
+        public async Task<int> RegisterBiometric(RegisterBiometricRequest request)
+        {
+            var sQuery = @"INSERT INTO public.ohd_user_biometrics
+                        (
+	                     user_id, 
+	                     device_id, 
+	                     public_key,
+	                     created_at
+                        )
+	                    VALUES 
+                        (@UserId, 
+			              @DeviceId, 
+			              @PublicKey, 
+			              @CreatedAt)
+                        RETURNING  id;";
+            var parameters = new DynamicParameters();
+            parameters.Add("@UserId", request.UserId);
+            parameters.Add("@DeviceId", request.DeviceId);
+            parameters.Add("@PublicKey", request.PublicKey);
+            parameters.Add("@CreatedAt", DateTime.UtcNow);
+            var result = await _genericRepository.ExecuteScalarAsync<int>(sQuery, parameters).ConfigureAwait(false);
+            return result;
+        }
+        public async Task<UserBiometric> GetUserBiometricByDeviceIdUserId(string deviceId, int userId)
+        {
+            try
+            {
+                var sQuery = @"SELECT  user_id AS UserId,device_id AS DeviceId,
+                            public_key AS PublicKey,
+                            created_at AS CreatedAt
+                            FROM public.ohd_user_biometrics
+                            WHERE user_id=@UserId AND device_id=@DeviceId";
+                var parameters = new DynamicParameters();
+                parameters.Add("@UserId", userId);
+                parameters.Add("@DeviceId", deviceId);
+                var result = await _genericRepository.GetFirstOrDefaultAsync<UserBiometric>(sQuery, parameters).ConfigureAwait(false);
+                return result;
+            }
+            catch { return new UserBiometric(); }
+        }
+        public async Task<LoginResult> IsBiometricUserExist(GetUserByEmailQuery model)
+        {
+
+            var sQuery = @"SELECT ur.id as UserId
+                            ,ur.Mobile 
+                            ,ur.company_id AS CompanyId
+                            ,Case when ur.id>0 then 1 else 0 end as IsUserValid
+                            ,ur.first_name as firstname
+                            ,ur.last_name as lastname
+                            ,ur.Email as EmailId
+                            ,r.Name as Role
+                             --,ur.lockoutenabled
+                             -- ,ur.accessfailedcount  
+                            ,last_login_date,
+                             failed_to_validate as FailedCountAttempted
+                           ,failedtovalidate_modified_at as LastAttempted
+                           ,isblocked as IsBlocked
+                           ,es.name as Status
+						   ,ur.comments As Comments 
+                            ,ur.isbusiness AS IsBusiness
+                            ,ur.accepted_terms_conditions_version AS AcceptedTermConditionVersion
+                            ,ur.is_forced_password AS IsForcedPasswordChange
+                            --,config.value as IsEstateEnable
+                           FROM ohd_user as Ur
+                           Join public.ohd_user_role_master as r on Ur.role_id = r.Id
+                           JOIN public.ohd_enum_status as es ON ur.status_id=es.id
+                             --JOIN public.ohd_configuration AS config ON ur.company_id=config.company_id
+                          WHERE (lower(ur.email)=@email or ur.mobile=@email)  and ur.company_id=@companyId and Ur.status_id!=@Inactive";
+            //--AND config.name='isestateenable' ";
+
+            var parameters = new DynamicParameters();
+
+            parameters.Add("@email", model.Email.ToLower());
+            parameters.Add("@companyId", model.CompanyId);
+            parameters.Add("@Inactive", (int)StatusEnum.Inactive);
+            try
+            {
+                return await _genericRepository.GetFirstOrDefaultAsync<LoginResult>(sQuery, parameters).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                return new LoginResult();
+            }
+        }
+        public async Task<int> IsBiometricExist(int userId, string deviceId)
+        {
+            var sQuery = @"SELECT id FROM public.ohd_user_biometrics
+                          WHERE  user_id=@UserId AND
+	                     device_id=@DeviceId; ";
+            var parameters = new DynamicParameters();
+            parameters.Add("@UserId", userId);
+            parameters.Add("@DeviceId", deviceId);
+            var result = await _genericRepository.ExecuteScalarAsync<int>(sQuery, parameters).ConfigureAwait(false);
+            return result;
+        }
+
+        public async Task<int> UpdateBiometric(int id, string key)
+        {
+            var sQuery = @"UPDATE  public.ohd_user_biometrics
+                          SET public_key=@PublicKey  
+                            WHERE id=@Id;
+                        SELECT id FROM public.ohd_user_biometrics
+                         WHERE id=@Id;";
+            var parameters = new DynamicParameters();
+            parameters.Add("@Id", id);
+            parameters.Add("@PublicKey", key);
+            var result = await _genericRepository.ExecuteScalarAsync<int>(sQuery, parameters).ConfigureAwait(false);
+            return result;
+        }
+        public async Task DeleteUserPermanentById(int userId)
+        {
+            try
+            {
+                var sQuery = @"DELETE FROM  public.ohd_user
+                          WHERE Id =@Id;";
+                var parameters = new DynamicParameters();
+                parameters.Add("@Id", userId);
+                await _genericRepository.ExecuteScalarAsync(sQuery, parameters);
+            }
+            catch (Exception ex) { }
         }
     }
     public class UserCommunications

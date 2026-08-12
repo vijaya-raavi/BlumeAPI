@@ -21,11 +21,15 @@ namespace Ontec.Core.Domain.Requests.Login.Command
             _ = RuleFor(x => x).CustomAsync(async (model, context, cencellation) =>
             {
                  var user = await _userRepository.IsUserPending(model.EmailMobile,model.CompanyId).ConfigureAwait(false);
-                if (user > 0)
+                 int tempUserId = await _userRepository.IsUserTemporary(model.EmailMobile).ConfigureAwait(false);
+                if (user > 0 && tempUserId ==0)
                 {
                     context.AddFailure(nameof(ResetPassword.EmailMobile), "Your registration request is sent to admin for approval");
                 }
-
+                if (user > 0 && tempUserId > 0)
+                {
+                    context.AddFailure(nameof(ResetPassword.EmailMobile), "Kindly register your profile in the system");
+                }
                 else if (model.Password != model.ConfirmPassword)
                 {
                     context.AddFailure(nameof(ResetPassword.ConfirmPassword), string.Format(CommonConstants.NotMatch, nameof(ResetPassword.ConfirmPassword)));

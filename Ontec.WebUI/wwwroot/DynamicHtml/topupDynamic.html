@@ -1,0 +1,270 @@
+<style>
+    .page {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+        border: 1px solid #ccc;
+    }
+
+    h1, h2, h3 {
+        text-align: center;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    label {
+        font-size: 11px;
+    }
+
+    .center {
+        text-align: center;
+    }
+
+    .right {
+        text-align: right;
+    }
+
+    .section {
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+
+    .token-block {
+        font-size: 16px;
+        font-weight: bold;
+        line-height: 28px;
+        text-align: center;
+    }
+</style>
+
+<div class="page">
+
+    <div class="center">
+        <img src="{{ LogoUrl }}" style="max-width:100px;">
+        <h1>Purchase Receipt</h1>
+        <hr>
+    </div>
+
+    {{ if ShowKeyChange }}
+    <div style="margin-bottom: 20px; text-align: center;">
+        <h3 style="text-align: center;color:Red;">Key Change Tokens</h3><hr />
+        <div style="margin-bottom:10px;margin-top:10px;text-align:left;">
+            <table style="width: 100%; border-collapse:collapse;margin-top:20px;">
+                <tr>
+                    <td style="width:50%;vertical-align: top;">
+                        <table style="width:100%;">
+                            <tr style="padding:20px;"><td><label style="font-size:11px">Meter Number: </label> </td></tr>
+                        </table>
+                    </td>
+                    <td style="width: 50%;vertical-align:top;">
+                        <table style="width: 100%;">
+                            <tr style="padding:20px;text-align:right">
+                                <td><label style="margin-right:10px;font-size:11px;">{{MeterNumber}}</label></td>
+                                <td style="width:5%;"></td>
+                            </tr>
+                            <tr><td></td></tr>
+
+                        </table>
+                    </td>
+                </tr>
+                <tr style="padding: 20px;">
+                    <td colspan="3"><label style="font-size: 11px;">Your resource token is below, but your meter requires a key change before you enter it.</label></td>
+                </tr>
+                <tr style="padding: 20px;">
+                    <td><label style="font-size: 11px;">To change your meters key, enter the tokens listed below:</label></td>
+                </tr>
+                <tr><td colspan=2 style="text-align:center;margin:0 auto;width:100%;"><label style="text-align: center;">{{ KeyChangeToken }}<br></label></td></tr>
+            </table>
+            <hr />
+        </div>
+
+
+        <div class="section">
+            <table>
+                <tr><td><label>Old SGC:</label></td><td class="right"><label>{{ OldSGC }}</label></td></tr>
+                <tr><td><label>Old TI:</label></td><td class="right"><label>{{ OldTI }}</label></td></tr>
+                <tr><td><label>Old KRN:</label></td><td class="right"><label>{{ OldKRN }}</label></td></tr>
+                <tr><td><label>New SGC:</label></td><td class="right"><label>{{ NewSGC }}</label></td></tr>
+                <tr><td><label>New TI:</label></td><td class="right"><label>{{ NewTI }}</label></td></tr>
+                <tr><td><label>New KRN:</label></td><td class="right"><label>{{ NewKRN }}</label></td></tr>
+            </table>
+            <hr>
+        </div>
+        {{ end }}
+
+        <div class="section">
+            <h3 style="color:red;">Credit Vend - Tax Invoice</h3>
+            <hr>
+        </div>
+
+        <table>
+            <tr><td><label>Util Name:</label></td><td class="right"><label>{{ UtilName }}</label></td></tr>
+            <tr><td><label>Util DistId:</label></td><td class="right"><label>{{ UtilDistId }}</label></td></tr>
+            <tr><td><label>Util VAT:</label></td><td class="right"><label>{{ UtilVATNo }}</label></td></tr>
+            <tr><td><label>Util Address:</label></td><td class="right"><label>{{ UtilAddress }}</label></td></tr>
+        </table>
+        <hr>
+        <div style="margin-bottom:10px;margin-top:10px;text-align:left;">
+
+            <table style="width: 100%; border-collapse:collapse;margin-top:20px;">
+                <tr>
+                    <td style="width:50%;vertical-align: top;">
+                        <table style="width:100%;">
+                            {{if ShowTaxDetails}}
+
+                            <tr style="padding:20px;">
+                                <td><label style="font-size:11px">Tax Number: </label></td>
+                            </tr>
+                            {{end}}
+                            <tr style="padding:20px;">
+                                <td><label style="font-size:11px">Customer: </label></td>
+                            </tr>
+                            <tr style="padding:20px;">
+                                <td><label style="font-size:11px">Address: </label></td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td style="width: 50%;vertical-align:top;">
+                        <table style="width: 100%;">
+                            {{if ShowTaxDetails}}
+
+                            <tr style="padding:20px;text-align:right">
+                                <td>
+                                    <label style="margin-right:10px;font-size:11px">
+                                        {{TaxNumber }}
+                                    </label>
+                                </td>
+                                <td style="width:5%;"></td>
+                                {{end}}
+                            </tr>
+
+                            <tr style="padding:20px;text-align:right">
+                                <td><label style="margin-right:10px;font-size:11px">{{Customer }}</label></td>
+                                <td style="width:5%;"></td>
+                            </tr>
+                            <tr style="padding:20px;text-align:right;">
+                                <td><label style="margin-right:10px;font-size:11px">{{Address }}</label></td>
+                                <td style="width:5%;"></td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+            <hr />
+        </div>
+        <div style="margin-bottom: 10px;text-align:center;"><h2> Your Resource Tokens </h2></div>
+        {{if ShowTarrifToken}}
+
+        <div style="margin-bottom: 10px; text-align: center;"><h2> Tariff: {{ Tariff }}</h2></div>
+        {{end}}
+        <h3>Vendor Name: {{ VendorName }}</h3>
+
+        <table>
+            <tr><td><label>Issued:</label></td><td class="right"><label>{{ IssuedDate }}</label></td></tr>
+            <tr><td><label>Reference:</label></td><td class="right"><label>{{ ReferenceNmber }}</label></td></tr>
+            <tr><td><label>Meter Number:</label></td><td class="right"><label>{{ MeterNumber }}</label></td></tr>
+
+            {{if ShowTokenDetails }}
+            <tr><td><label>Token Tech:</label></td><td class="right"><label>{{ TokenTech }}</label></td></tr>
+            <tr><td><label>Alg:</label></td><td class="right"><label>{{ Alg }}</label></td></tr>
+            <tr><td><label>SGC:</label></td><td class="right"><label>{{ SGC }}</label></td></tr>
+            <tr><td><label>TI:</label></td><td class="right"><label>{{ TI }}</label></td></tr>
+            <tr><td><label>KRN:</label></td><td class="right"><label>{{ KRN }}</label></td></tr>
+            {{ end }}
+        </table>
+        <hr>
+
+        {{ if ShowBsstToken }}
+        <div style="margin-bottom: 20px; text-align: center;"><h2> Free Basic Resource Tokens </h2><label style="text-align: center;">{{BsstToken}}</label></div>
+        <div style="margin-bottom:10px;margin-top:10px;text-align:left;page-break-inside :avoid;page-break-inside:auto;">
+            <table style="width: 100%; border-collapse:collapse;margin-top:20px;page-break-inside :avoid;page-break-inside:auto;">
+                <tr>
+                    <td style="width:50%;vertical-align:top">
+                        <table>
+                            <tr><td><label>Receipt#:</label></td><td class="right"><label>{{ BsstReceiptId }}</label></td></tr>
+                            <tr><td><label>Units:</label></td><td class="right"><label>{{ BsstUnits }}</label></td></tr>
+                            <tr><td><label>Amount:</label></td><td class="right"><label>R {{ BsstTokenAmount }}</label></td></tr>
+                            <tr><td><label>Tax:</label></td><td class="right"><label>R {{ BsstTokenTax }}</label></td></tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+            <hr>
+            {{ end }}
+
+            {{ if ShowStdToken }}
+            <div style="margin-bottom: 10px; text-align: center;"><h2> Standard Tokens </h2><label style="text-align: center;">{{ShowStdToken}}</label></div>
+            <div style="margin-bottom:10px;margin-top:10px;text-align:left;page-break-inside :avoid;page-break-inside:auto;">
+                <table style="width: 100%; border-collapse:collapse;margin-top:20px;page-break-inside :avoid;page-break-inside:auto;">
+                    <tr>
+                        <td style="width:50%;vertical-align:top">
+
+                            <table>
+                                <tr><td><label>Receipt#:</label></td><td class="right"><label>{{ stdReceiptId }}</label></td></tr>
+                                <tr><td><label>Units:</label></td><td class="right"><label>{{ Units }}</label></td></tr>
+                                <tr><td><label>Amount:</label></td><td class="right"><label>R {{ stdamt }}</label></td></tr>
+                                <tr><td><label>Tax:</label></td><td class="right"><label>R {{ stdtax }}</label></td></tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+                <hr>
+                {{ end }}
+                {{ if ShowDebt}}
+                <div class="section">
+                    <h2 class="center">Debt Items</h2>
+
+                    {{ for item in DebtItems }}
+                    <div class="section">
+                        <h3 class="center">{{ item.Text }}</h3>
+                        <table>
+                            <tr><td><label>Amount:</label></td><td class="right"><label>R {{ item.Amount }}</label></td></tr>
+                            <tr><td><label>Tax:</label></td><td class="right"><label>R {{ item.Tax }}</label></td></tr>
+                            <tr><td><label>Remaining Balance:</label></td><td class="right"><label>R {{ item.RemainBalance }}</label></td></tr>
+                        </table>
+                    </div>
+                    <hr>
+                    {{ end }}
+
+                </div>
+                {{ end }}
+                {{ if ShowFixed }}
+                <div class="section">
+                    <h2 class="center">Fixed Items</h2>
+
+                    {{ for item in FixedItems }}
+                    <div class="section">
+                        <h3 class="center">{{ item.text }}</h3>
+                        <table>
+                            <tr><td><label>Amount:</label></td><td class="right"><label>R {{ item.Amount }}</label></td></tr>
+                            <tr><td><label>Tax:</label></td><td class="right"><label>R {{ item.Tax }}</label></td></tr>
+                        </table>
+                    </div>
+                    <hr>
+                    {{ end }}
+
+                </div>
+                {{ end }}
+                <h3>UTILITY TRANSACTION FEE</h3>
+                <table><tr><td><label>Transaction Fee:</label></td><td class="right"><label>R {{ TransactionFee }}</label></td></tr></table>
+                <hr>
+
+                <table>
+                    <tr><td><label>Total (VAT Excl.):</label></td><td class="right"><label>R {{ PurchasePriceExlTax }}</label></td></tr>
+                    <tr><td><label>Total (VAT Incl.):</label></td><td class="right"><label>R {{ PurchasePriceInclTax }}</label></td></tr>
+                </table>
+                {{if ShowCustomerMessage}}
+
+                <div style="margin-bottom: 20px;page-break-inside :avoid;page-break-inside:auto; text-align: center;">
+                    <label style="font-size:11px;text-align:center;"> {{CustomerMessage }}</label>
+                </div>
+                {{end}}
+            </div>
+        </div>
+    </div>
+
+</div>

@@ -16,5 +16,6 @@
         public string RecordStatus { get; set; }
         public string AuxChargeScheduleId { get; set; }
         public DateTime StartDate { get; set; }
+        public DateTime SuspendUntil { get; set; }
     }
 }

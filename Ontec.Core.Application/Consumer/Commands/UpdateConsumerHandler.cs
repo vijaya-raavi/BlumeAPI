@@ -91,6 +91,48 @@ namespace Ontec.Core.Application.Consumer.Commands
             }
             return response;
         }
+        //public async Task<string> Handle(DeleteConsumerById request, CancellationToken cancellationToken)
+        //{
+        //    request.TrimAllStrings();
+        //    var objAudit = new AuditHelper();
+        //    var commonValidator = new DeleteConsumerByIdValidator(_userRepository);
+        //    var validatorResult = await commonValidator.ValidateAsync(request, cancellationToken);
+        //    if (!validatorResult.IsValid)
+        //        throw new ValidationException(validatorResult.Errors);
+
+        //    await _consumerRepository.DeleteConsumerById(request.Id).ConfigureAwait(false);
+        //    var user = await _userRepository.GetUserById(request.Id).ConfigureAwait(false);
+        //    if (_workContext.CurrentRoleId == (int)RoleMasterEnum.Admin || _workContext.CurrentRoleId == (int)RoleMasterEnum.Operator)
+        //    {
+        //        objAudit.AddedBy = _workContext.CurrentUserId;
+        //        objAudit.Action = "Delete";
+        //        objAudit.ActionTable = "ohd_user";
+        //        objAudit.ModuleName = "Consumer";
+        //        objAudit.StatusId = (int)StatusEnum.Inactive;
+        //        objAudit.UpdatedId = request.Id;
+        //        objAudit.EntityName = user.FirstName + ' ' + user.LastName;
+        //        await _auditTrail.AuditTrail(objAudit).ConfigureAwait(false);
+        //    }
+        //    EmailModelClass obj = new()
+        //    {
+
+        //        title = "Account deleted.",
+        //        email = user.Email,
+        //        forEvent = "ConsumerDelete",
+        //        subtitle = "",
+        //        companyId = user.CompanyId,
+        //        mobile = user.Mobile,
+        //        propertyUser = user.FirstName,
+        //        body = "",
+        //        documentPath = ""
+
+        //    };
+        //    await _otpService.SendEventMail(obj).ConfigureAwait(false);
+        //    return "Deleted successfully!";
+        //}
+
+
+
         public async Task<string> Handle(DeleteConsumerById request, CancellationToken cancellationToken)
         {
             request.TrimAllStrings();
@@ -112,6 +154,37 @@ namespace Ontec.Core.Application.Consumer.Commands
                 objAudit.UpdatedId = request.Id;
                 objAudit.EntityName = user.FirstName + ' ' + user.LastName;
                 await _auditTrail.AuditTrail(objAudit).ConfigureAwait(false);
+            }
+            var groupLinkingData = await _notificationRepository.GetConsumerWiseGroupLinking(request.Id).ConfigureAwait(false);
+            foreach (var consumerLink in groupLinkingData)
+            {
+                var reqRemoveLinking = new RemoveConsumerFromGroupQueryRequest
+                {
+                    NotificationGroupLinkId = consumerLink.Id,
+                    GroupId = consumerLink.GroupId,
+                    UserId = request.Id,
+
+                };
+                var staleToken = new List<string>();
+                int result = await _consumerRepository.RemoveConsumerFromGroup(reqRemoveLinking.NotificationGroupLinkId).ConfigureAwait(false);
+                var topic = await _notificationRepository.GetTopicName(reqRemoveLinking.GroupId).ConfigureAwait(false);
+                var tokens = await _userRepository.GetDeviceToken(reqRemoveLinking.UserId).ConfigureAwait(false);
+                if (!string.IsNullOrEmpty(tokens))
+                {
+                    staleToken.Add(tokens);
+                    var jsonPath = _environment.ContentRootPath + "\\serviceAccountKey.json";
+
+                    if (FirebaseApp.DefaultInstance == null)
+                    {
+                        FirebaseApp.Create(new AppOptions()
+                        {
+                            Credential = GoogleCredential.FromFile(jsonPath),
+                        });
+                    }
+                    var messaging = FirebaseMessaging.DefaultInstance;
+                    var response = await messaging.UnsubscribeFromTopicAsync(staleToken, topic);
+                }
+
             }
             EmailModelClass obj = new()
             {
@@ -149,33 +222,32 @@ namespace Ontec.Core.Application.Consumer.Commands
             string deviceToken = await _userRepository.GetDeviceToken(request.ID).ConfigureAwait(false);
             var company = await _companyRepository.GetCompanyDetails(user.CompanyId).ConfigureAwait(false);
             var companyDetails = await _companyHelper.GetCompany(user.CompanyId).ConfigureAwait(false);
-            var emailTemplates = await _emailTemplateRepository.GetEmailTemplates().ConfigureAwait(false);
-            var welcomeEmail = emailTemplates.FirstOrDefault(g => g.Name.Equals("Reject User"));
-            if (!string.IsNullOrEmpty(welcomeEmail.Html))
-            {
-                var model = new PropertyUserWelcomeEmailDto
-                {
-                    CompanyName = companyDetails.Name,
-                    FirstName = user.FirstName,
-                    Email = user.Email,
-                    Mobile = user.Mobile,
-                    companyEmail = companyDetails.Email,
-                    Domain = companyDetails.Domain,
-                    companyLogo = companyDetails.RelativeUrl,
-                    RejectReason = request.Comments
-                };
-                var template = Template.Parse(welcomeEmail.Html);
-                welcomeEmail.Html = template.Render(model, memberRenamer: member => member.Name);
-            }
+            // var emailTemplates = await _emailTemplateRepository.GetEmailTemplates().ConfigureAwait(false);
+            // var welcomeEmail = emailTemplates.FirstOrDefault(g => g.Name.Equals("Reject User"));
+            //if (!string.IsNullOrEmpty(welcomeEmail.Html))
+            //{
+            //    var model = new PropertyUserWelcomeEmailDto
+            //    {
+            //        CompanyName = companyDetails.Name,
+            //        FirstName = user.FirstName,
+            //        Email = user.Email,
+            //        Mobile = user.Mobile,
+            //        companyEmail = companyDetails.Email,
+            //        Domain = companyDetails.Domain,
+            //        companyLogo = companyDetails.RelativeUrl,
+            //        RejectReason = request.Comments
+            //    };
+            //    var template = Template.Parse(welcomeEmail.Html);
+            //    welcomeEmail.Html = template.Render(model, memberRenamer: member => member.Name);
+            //}
 
             if (result > 0)
             {
-                welcomeEmail = emailTemplates.FirstOrDefault(g => g.Name.Equals("Approve User"));
+                //welcomeEmail = emailTemplates.FirstOrDefault(g => g.Name.Equals("Approve User"));
                 string title = "";
                 string body = "";
                 if (request.IsApproved)
                 {
-
                     if (_workContext.CurrentRoleId == (int)RoleMasterEnum.Admin || _workContext.CurrentRoleId == (int)RoleMasterEnum.Operator)
                     {
                         objAudit.AddedBy = _workContext.CurrentUserId;
@@ -188,22 +260,6 @@ namespace Ontec.Core.Application.Consumer.Commands
                     }
 
 
-                    title = "Your registration request is approved";
-                    if (!string.IsNullOrEmpty(welcomeEmail.Html))
-                    {
-                        var model = new PropertyUserWelcomeEmailDto
-                        {
-                            CompanyName = companyDetails.Name,
-                            FirstName = user.FirstName,
-                            Email = user.Email,
-                            Mobile = user.Mobile,
-                            companyEmail = companyDetails.Email,
-                            Domain = companyDetails.Domain,
-                            companyLogo = companyDetails.RelativeUrl
-                        };
-                        var template = Template.Parse(welcomeEmail.Html);
-                        welcomeEmail.Html = template.Render(model, memberRenamer: member => member.Name);
-                    }
                     EmailModelClass obj = new()
                     {
 
@@ -214,8 +270,8 @@ namespace Ontec.Core.Application.Consumer.Commands
                         companyId = user.CompanyId,
                         mobile = user.Mobile,
                         propertyUser = user.UserName,
-                        // body = "Welcome to " + company.CompanyName,
-                        body = welcomeEmail.Html,
+                        body = "Welcome to " + company.CompanyName,
+                        //body = welcomeEmail.Html,
                         documentPath = ""
                     };
 
@@ -264,8 +320,8 @@ namespace Ontec.Core.Application.Consumer.Commands
                         companyId = user.CompanyId,
                         mobile = user.Mobile,
                         propertyUser = user.UserName,
-                        //body = "Your registration request to company, " + company.CompanyName + " was rejected.",
-                        body = welcomeEmail.Html,
+                        body = "Your registration request to company, " + company.CompanyName + " was rejected.",
+                        //body = welcomeEmail.Html,
                         documentPath = ""
 
                     };

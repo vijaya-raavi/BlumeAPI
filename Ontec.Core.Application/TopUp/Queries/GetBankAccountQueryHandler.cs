@@ -19,7 +19,7 @@ namespace Ontec.Core.Application.TopUp.Queries
     public class GetBankAccountQueryHandler : IRequestHandler<GetBankAccountsQuery, IEnumerable<BankAccountDto>>
                                              , IRequestHandler<GetPaymentMethodsQuery, IEnumerable<PaymentMethodsDto>>
                                             , IRequestHandler<GetTopUpTransactionsQuery, DatatableModel<GetTopUpTransaction>>
-                                            , IRequestHandler<GetUserPayamenstQuery, DatatableModel<UserPaymentsDto>>
+                                            , IRequestHandler<GetUserPayamenstQuery, AdminTopUpDto>
                                             , IRequestHandler<DownloadPurchaceRecieptPdfQuery, PurchaceReceiptResponseModel>
 
 
@@ -84,9 +84,18 @@ namespace Ontec.Core.Application.TopUp.Queries
             return await _topupRepository.GetTopupTransactions(request).ConfigureAwait(false);
         }
 
-        public async Task<DatatableModel<UserPaymentsDto>> Handle(GetUserPayamenstQuery request, CancellationToken cancellationToken)
+        public async Task<AdminTopUpDto> Handle(GetUserPayamenstQuery request, CancellationToken cancellationToken)
         {
-            return await _topupRepository.GetUserPayments(request).ConfigureAwait(false);
+            var response = new AdminTopUpDto();
+            if (!request.IsPending)
+            {
+                response.UserPayments = await _topupRepository.GetUserPayments(request).ConfigureAwait(false);
+            }
+            else
+            {
+                response.UserPendingPayments = await _topupRepository.GetTrailVendSuccessTopupTransactions(request).ConfigureAwait(false);
+            }
+            return response;
         }
 
         public async Task<PurchaceReceiptResponseModel> Handle(DownloadPurchaceRecieptPdfQuery request, CancellationToken cancellationToken)

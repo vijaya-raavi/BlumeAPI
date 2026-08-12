@@ -64,6 +64,7 @@ namespace Ontec.Core.Domain.Models.Dto.Consumption
     {
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
+        public string UniqueId { get; set; }
         public int Year {  get; set; }
         public string Month {  get; set; }
         public string Arg { get; set; }

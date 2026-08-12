@@ -13,7 +13,12 @@
         public string NotificationKey {  get; set; }
 
     }
-
+    public class GroupLinkingDto
+    {
+        public int Id { get; set; }
+        public int GroupId { get; set; }
+        public int ConsumerId { get; set; }
+    }
     public class GroupWiseDetailedDto
     {
         public int GroupId { get; set; }

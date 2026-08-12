@@ -149,7 +149,7 @@ namespace Ontec.Core.Application.Common.Helper
             int rptCount = 0;
             int vendReqCount = 0;
             var orignalRefNo = rndNumber + count.ToString();
-            var companyDetails = await _companyHelper.GetCompany(2).ConfigureAwait(false);
+            var companyDetails = await _companyHelper.GetCompany(3).ConfigureAwait(false);
             try
             {
                 LogToFile(companyDetails.WWWPath, "Befor Preapare xmData");
@@ -161,7 +161,7 @@ namespace Ontec.Core.Application.Common.Helper
                                         + "<elecMsg ver=\"2.53\">"
                                         + "<vendReq>"
                                         + "<ref>" + orignalRefNo + "</ref>"
-                                        + "<amt cur=\"ZAR\">" + (request.Amount * 100) + "</amt>"
+                                        + "<amt cur=\"ZAR\">" +Math.Round(request.Amount * 100) + "</amt>"
                                         + "<numTokens>" + request.NumTokens + "</numTokens>"
                                         + "<meter>" + request.Meter.ToUpper() + "</meter>"
                                         + "<payType>" + request.PayType + "</payType>"
@@ -452,7 +452,7 @@ namespace Ontec.Core.Application.Common.Helper
                                              + "<elecMsg ver=\"2.53\">"
                                              + "<trialVendReq>"
                                              + "<ref>" + rndNumber + count.ToString() + "</ref>"
-                                             + "<amt cur=\"ZAR\">" + (request.Amount * 100) + "</amt>"
+                                             + "<amt cur=\"ZAR\">" + Math.Round(request.Amount * 100) + "</amt>"
                                              + "<numTokens>" + request.NumTokens + "</numTokens>"
                                              + "<meter>" + request.Meter.ToUpper() + "</meter>"
                                              + "<payType>" + request.PayType + "</payType>"
@@ -610,9 +610,8 @@ namespace Ontec.Core.Application.Common.Helper
             {
 
                 // Define the endpoint URL
-                //string url = "http://bizswitch.net:3530";
-                //string url = "http://pyxisuat2.bizswitch.net:3530";
-                string url = "http://meerkatuat.bizswitch.net:3680";
+                //string url = "https://blumeenergy.bizswitch.net:30880/";
+                 string url = "http://pyxisuat2.bizswitch.net:3530";
                 // Add Accept-Encoding header
                 httpClient.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate");
                 //httpClient.DefaultRequestHeaders.Add("Content-Encoding", "gzip, deflate");
@@ -1173,7 +1172,7 @@ namespace Ontec.Core.Application.Common.Helper
         public async Task<VendReverseRequestResponse> VendReverse(SendVendReverseRequestModel request)
         {
             _logger.LogError("In Vend Reverse Method");
-            var companyDetails = await _companyHelper.GetCompany(2).ConfigureAwait(false);
+            var companyDetails = await _companyHelper.GetCompany(3).ConfigureAwait(false);
             LogToFile(companyDetails.WWWPath, "In  VendReverse function ");
             var result = new VendReverseRequestResponse()
             {

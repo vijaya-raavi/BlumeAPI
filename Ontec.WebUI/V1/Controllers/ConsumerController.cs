@@ -36,16 +36,16 @@ namespace Ontec.WebUI.V1.Controllers
             };
             return Ok(await Mediator.Send(request).ConfigureAwait(false));
         }
-        [HttpGet("get-consumers-masters/{estateId}")]
+        [HttpGet("get-consumers-masters")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ConsumerMasterDto))]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> GetConsumerMasters([FromRoute] int estateId)
+        public async Task<IActionResult> GetConsumerMasters()
         {
             var request = new GetConsumerMastersQuery
             {
-                EstateId=estateId
+               
             };
             return Ok(await Mediator.Send(request).ConfigureAwait(false));
         }

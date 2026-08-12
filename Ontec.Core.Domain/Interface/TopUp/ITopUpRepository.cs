@@ -4,6 +4,7 @@ using Ontec.Core.Domain.Models.Dto;
 using Ontec.Core.Domain.Models.Dto.AdminDashboard;
 using Ontec.Core.Domain.Models.Dto.Debitech;
 using Ontec.Core.Domain.Models.Dto.TopUp;
+using Ontec.Core.Domain.Requests.Dashboard.Command;
 using Ontec.Core.Domain.Requests.Debitech.Command;
 using Ontec.Core.Domain.Requests.Debitech.Queries;
 using Ontec.Core.Domain.Requests.TopUp.Command;
@@ -51,7 +52,7 @@ namespace Ontec.Core.Domain.Interface.TopUp
         Task<int> AddBankTransferTransaction(AddBankTransferTransactionDto request);
         Task<int> IsNetUpTransactionGuidExist(string transactionReferenceNo);
         Task<int> IsBankTransactionIdExist(string bankTransactionId);
-        Task<PaymentDashboardDto> GetPaymentDashboard(int estateId);
+        Task<PaymentDashboardDto> GetPaymentDashboard();
         Task<AdminDashboardDto> GetAdminDashboard();
         Task<PurchaseReceiptDto> GetReceiptDetails(DownloadPurchaceRecieptPdfQuery request);
         Task<PurchaceReceiptResponseModel> DownloadPurchaceRecieptPdfQuery(DownloadPurchaceRecieptPdfQuery request,int userId);
@@ -59,7 +60,7 @@ namespace Ontec.Core.Domain.Interface.TopUp
         Task<string> GetTransactionNoFromRctNum(string rctNum);
         Task<double> GetTransactionNoFeeFromRctNum(string rctNum);
         Task<int> ISVendResponseExist(string vendResponse);
-
+        Task<IEnumerable<PaymentMethodsDto>> GetAllPaymentMethods();
         Task<int> ISRCTNoExist(string RctNo);
         Task<int> AddTopupTransactionsFromSTSResponse(AddSTSTopUpHelper helper);
         Task<GetSTSTopUpTransactions> GetSTSTopUps(List<string> RecNumn,DateTime fromdate,DateTime toDate);
@@ -71,5 +72,15 @@ namespace Ontec.Core.Domain.Interface.TopUp
         Task<int> SaveDebitechgetNetChecksumRequest(GetNetCheckSumQuery request, string checksum);
         Task<int> SaveDebitechNotifyRequest(BankNotificationRequestQuery request);
         Task<int> UpdateDebitechNotifyResponse(List<BankNotificationResponseDto> response, int debitechNotifyId);
+        Task<Dictionary<string, TransactionNoFeeFromRctNumDto>> GetTransactionFeesByReceiptNumbers(List<string> receiptNumbers);
+        Task DeleteDebitechDuplicateNotifyRequest(int id);
+        Task<int> SaveCredits(CaptureUsersCreditsToSaveCommandReuqest request, string imagePath, int imgCount);
+        Task<int> UpdateCreditImages(string imagePath, string columnName, int imageCount, int id);
+        Task<CreditImageDto> GetCreditsId(int meterId, int userId);
+        Task<CreditImagesRawDto> GetCreditImageValues(int meterId, int userId);
+        Task<int> UpdateAllImages(long id, string img1, string img2, string img3, string img4, string img5, string img6, int count);
+        Task<int> SaveCreditImage(CaptureUsersCreditsToSaveCommandReuqest reuqest, string imageUrl);
+        Task<List<UserCreditImageDto>> GetUserImages(long meterId);
+        Task<DatatableModel<GetTopUpTransaction>> GetTrailVendSuccessTopupTransactions(GetUserPayamenstQuery request);
     }
 }

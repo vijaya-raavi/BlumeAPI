@@ -138,7 +138,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.ManagePermission
             parameter.Add("@UserId", request.UserId);
             return await _genericRepository.GetAsync<SettingTypeDto>(sQuery,parameter);
         }
-        public async Task<IEnumerable<SettingTypeDto>> GetRoleMaster()
+        public async Task<IEnumerable<SettingTypeDto>> GetSettingTypeaster()
         {
             var sQuery = @"SELECT 
                             id AS SettingTypeId,

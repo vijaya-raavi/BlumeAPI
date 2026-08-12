@@ -37,5 +37,9 @@ namespace Ontec.Core.Domain.Interface.Property
         Task<bool> IsPropertyExist(int propertyId);
         Task<PropertyModelDto> GetAllPropertyById(int propertyId);
         Task<DatatableModel<PropertyDto>> GetAllPropertiesNew(GetAllPropertiesRequestQuery request);
+        Task<IEnumerable<PropertyMeter>> GetAllMeterNumbersByPropertyId(int propertyId);
+        Task<IEnumerable<LinkedProperty>> GetMeterLinkedProperty(List<string> meterNumbers);
+        Task<int> UpdateMeterStatus(List<int> ids);
+        Task<int> UpdateCustomerAgreementValueByPropertyId(int propertyId, string value);
     }
 }

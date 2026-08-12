@@ -13,6 +13,7 @@ using Ontec.Core.Domain.Models.Dto.User;
 using Ontec.Core.Domain.Requests.Login.Command;
 using Ontec.Core.Domain.Requests.Login.Queries;
 using Ontec.Core.Domain.Requests.User.Queries;
+using static System.Net.WebRequestMethods;
 
 namespace Ontec.Core.Application.Otp.Handler.Queries
 {
@@ -72,7 +73,7 @@ namespace Ontec.Core.Application.Otp.Handler.Queries
             res.Otp = r;
 
             _workContext.SetCurrentOtp(res);
-            string body = r;
+            string body = " Your registration otp is : " + r;
             res.Otp = "";
 
             EmailModelClass obj = new()
@@ -159,14 +160,13 @@ namespace Ontec.Core.Application.Otp.Handler.Queries
                 };
 
                 res.EmailResponse = await _otpService.SendEventMail(obj).ConfigureAwait(false);
-
-                string body = "Your OTP is : ";
+                string body = "Your OTP to reset password is : ";
                 if (getUser.Mobile.Length == 10)
                 {
                     getUser.Mobile = getUser.Mobile.TrimStart('0');
 
                 }
-                res.MobileResponse = await _otpService.SendMobileOtp(r, "", request.CountryCode + request.EmailMobile).ConfigureAwait(false);
+                res.MobileResponse = await _otpService.SendMobileOtp(r, body + r, request.CountryCode + getUser.Mobile).ConfigureAwait(false);
 
             }
             else
@@ -282,7 +282,7 @@ namespace Ontec.Core.Application.Otp.Handler.Queries
                     request.MobileNumber = request.MobileNumber.TrimStart('0');
 
                 }
-                res.MobileResponse = await _otpService.SendMobileOtp(r, body, request.CountryCode + request.MobileNumber).ConfigureAwait(false);
+                res.MobileResponse = await _otpService.SendMobileOtp(r, "Your otp to update contact details is : "+r, request.CountryCode + request.MobileNumber).ConfigureAwait(false);
             }
             return res;
         }

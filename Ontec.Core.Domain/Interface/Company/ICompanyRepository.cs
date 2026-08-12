@@ -16,5 +16,6 @@ namespace Ontec.Core.Domain.Interface.Company
         Task<IEnumerable<OntecSelectListItem>> GetStates();
         Task<CompanyDto> GetCompanyDetails(int id);
         Task<int> UpdateCompanyLogo(string CompanyLogoUrl, int id, int Type);
+        Task<IEnumerable<OntecSelectListItem>> GetPaymentGateWays();
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Web.Mvc.Html;
+using Humanizer;
 using MediatR;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -163,123 +164,122 @@ IEmailTemplateRepository emailTemplateRepository)
                     break;
             }
             var meterList = await _meterRepository.GetMetersByPropertyId(request.PropertyId).ConfigureAwait(false);
-            var customerAgreementId = "";
+            var customerAgreementId = string.Empty;
+            var customerAccountId = string.Empty;
             foreach (var meter in meterList)
             {
                 if (string.IsNullOrEmpty(customerAgreementId))
                 {
                     var meterUrl = _masterApiSetting.BaseUrl + _masterApiSetting.MeterNumberApi + "?meter.meterNum=" + meter.MeterNumber.ToUpper() + "&paging=(limit)(5)(offset)(0)";
                     var meterResult = await _masterApiConnectService.GetMeter(meterUrl).ConfigureAwait(false);
-                    if (meterResult != null)
+                    if (meterResult != null && meterResult.Data.Count() > 0)
                     {
                         var transactionStatementDto = new TransactionStatementDto();
-
-                        var meterId = meterResult.Data[0].Meter.Id;
-                        var customerAccountId = meterResult.Data[0].CustomerAccount.Id;
-                        customerAgreementId = meterResult.Data[0].CustomerAgreement.Id;
-                        var dateFilter = "&filter=(dateEntered)(GTE)(" + startDate.Date.ToString("yyyy-MM-dd") + "T00:00:000.000%2B0200)" +
-                                          "&filter=(dateEntered)(LT)(" + endDate.Date.ToString("yyyy-MM-dd") + "T23:59:599.000%2B0200)";
-                        var ctdateFilter = "&filter=(transDate)(GTE)(" + startDate.Date.ToString("yyyy-MM-dd") + "T00:00:000.000%2B0200)" +
-                                          "&filter=(transDate)(LT)(" + endDate.Date.ToString("yyyy-MM-dd") + "T23:59:599.000%2B0200)";
-
-                        var paging = "&paging=(limit)(250)(offset)(0)";
-                        var accountTransactionUrl = _masterApiSetting.BaseUrl + _masterApiSetting.AccountTransApi + "?filter=(customerAccountId)(EQ)(" + customerAccountId + ")" + paging + dateFilter;
-
-                        var accountTrasactions = await _masterApiConnectService.GetAccountTransactions(accountTransactionUrl).ConfigureAwait(false);
-
-
-                        if (accountTrasactions != null)
+                        var hasValidData = meterResult?.Data?.Any(x => x.Customer != null && x.CustomerAccount != null && x.CustomerAgreement != null) == true;
+                        if (hasValidData)
                         {
-                            //var sortedData = accountTrasactions.Data.OrderByDescending(t => t.Id);
-                            //if (sortedData.Any())
-                            //{
-                            //    summaryDto.OpeningBalance = Convert.ToDecimal(string.Format("{0:F2}", sortedData.LastOrDefault().ResultantBalance));
-                            //    summaryDto.ClosingBalance = Convert.ToDecimal(string.Format("{0:F2}", sortedData.FirstOrDefault().ResultantBalance));
+                            var item = meterResult?.Data.First(x => x.Customer != null && x.CustomerAccount != null && x.CustomerAgreement != null);
+                            var meterId = meterResult?.Data[0].Meter.Id;
+                            customerAccountId = meterResult?.Data[0].CustomerAccount.Id;
+                            customerAgreementId = meterResult?.Data[0].CustomerAgreement.Id;
+                            var dateFilter = "&filter=(dateEntered)(GTE)(" + startDate.Date.ToString("yyyy-MM-dd") + "T00:00:000.000%2B0200)" +
+                                              "&filter=(dateEntered)(LT)(" + endDate.Date.ToString("yyyy-MM-dd") + "T23:59:599.000%2B0200)";
+                            var ctdateFilter = "&filter=(transDate)(GTE)(" + startDate.Date.ToString("yyyy-MM-dd") + "T00:00:000.000%2B0200)" +
+                                              "&filter=(transDate)(LT)(" + endDate.Date.ToString("yyyy-MM-dd") + "T23:59:599.000%2B0200)";
+
+                            var paging = "&paging=(limit)(250)(offset)(0)";
+                            var accountTransactionUrl = _masterApiSetting.BaseUrl + _masterApiSetting.AccountTransApi + "?filter=(customerAccountId)(EQ)(" + customerAccountId + ")" + paging + dateFilter;
+
+                            var accountTrasactions = await _masterApiConnectService.GetAccountTransactions(accountTransactionUrl).ConfigureAwait(false);
 
 
-                            //}
-
-                            var sortedData = accountTrasactions.Data.OrderBy(t => t.TransDate).ToList();
-
-                            if (sortedData.Any())
+                            if (accountTrasactions != null)
                             {
-                                summaryDto.OpeningBalance = Math.Round(sortedData.First().ResultantBalance, 2);
 
-                                summaryDto.ClosingBalance = Math.Round(sortedData.Last().ResultantBalance, 2);
+
+                                var sortedData = accountTrasactions.Data.OrderBy(t => t.TransDate).ToList();
+
+                                if (sortedData.Any())
+                                {
+                                    summaryDto.OpeningBalance = Math.Round(sortedData.First().ResultantBalance, 2);
+
+                                    summaryDto.ClosingBalance = Math.Round(sortedData.Last().ResultantBalance, 2);
+                                }
+                                var accountTransTypeList = (from t in accountTrasactions.Data
+                                                            group t by t.AccountTransType into g
+                                                            select new
+                                                            {
+                                                                AccountTransType = g.Key.ToString(),
+                                                                ResultantBalance = g.Sum(t => t.ResultantBalance)
+                                                            }).AsEnumerable();
+                                //if (accountTransTypeList.Any())
+                                //{
+                                //    foreach (var type in accountTransTypeList)
+                                //    {
+                                //        if (type.AccountTransType == "BILLING_CALC")
+                                //        {
+
+                                //            summaryDto.TotalBillingcalculations = Math.Round(type.ResultantBalance,2);
+                                //        }
+                                //        if (type.AccountTransType == "ADJUSTMENT")
+                                //        {
+                                //            summaryDto.TotalAdjustments = Math.Round(type.ResultantBalance, 2);
+                                //        }
+                                //        if (type.AccountTransType == "DEPOSIT")
+                                //        {
+                                //            summaryDto.TotalDeposit = Math.Round(type.ResultantBalance, 2);
+                                //        }
+                                //    }
+                                //}
+                                var accountAdjustments = (from t in accountTrasactions.Data
+                                                          where t.AccountTransType == "ADJUSTMENT"
+                                                          select new AccountAdjustment
+                                                          {
+                                                              Date = t.DateEntered.ToString("dd-MM-yyyy"),
+                                                              Total = t.ResultantBalance
+                                                          }).AsEnumerable();
+                                var adjustmentTotal = new Total
+                                {
+                                    TotalR = accountAdjustments.Sum(t => t.Total)
+                                };
+
+
+                                transactionStatementDto.AdjustmentTotal = adjustmentTotal;
+                                transactionStatementDto.AccountAdjustments = accountAdjustments;
                             }
-                            var accountTransTypeList = (from t in accountTrasactions.Data
-                                                        group t by t.AccountTransType into g
-                                                        select new
-                                                        {
-                                                            AccountTransType = g.Key.ToString(),
-                                                            ResultantBalance = g.Sum(t => t.ResultantBalance)
-                                                        }).AsEnumerable();
-                            //if (accountTransTypeList.Any())
-                            //{
-                            //    foreach (var type in accountTransTypeList)
-                            //    {
-                            //        if (type.AccountTransType == "BILLING_CALC")
-                            //        {
 
-                            //            summaryDto.TotalBillingcalculations = Math.Round(type.ResultantBalance,2);
-                            //        }
-                            //        if (type.AccountTransType == "ADJUSTMENT")
-                            //        {
-                            //            summaryDto.TotalAdjustments = Math.Round(type.ResultantBalance, 2);
-                            //        }
-                            //        if (type.AccountTransType == "DEPOSIT")
-                            //        {
-                            //            summaryDto.TotalDeposit = Math.Round(type.ResultantBalance, 2);
-                            //        }
-                            //    }
-                            //}
-                            var accountAdjustments = (from t in accountTrasactions.Data
-                                                      where t.AccountTransType == "ADJUSTMENT"
-                                                      select new AccountAdjustment
-                                                      {
-                                                          Date = t.DateEntered.ToString("dd-MM-yyyy"),
-                                                          Total = t.ResultantBalance
-                                                      }).AsEnumerable();
-                            var adjustmentTotal = new Total
+                            var transactionStatement = await GetNewTransaction(customerAgreementId, ctdateFilter, meter.MeterNumber, dateFilter, customerAccountId);
+                            var totalAmount = transactionStatement.LastOrDefault()?.TotalAmount;
+                            summaryDto.OpeningBalance = Convert.ToDecimal(summaryDto.OpeningBalance) - Convert.ToDecimal(totalAmount);
+                            if (transactionStatement.Any())
                             {
-                                TotalR = accountAdjustments.Sum(t => t.Total)
-                            };
-
-
-                            transactionStatementDto.AdjustmentTotal = adjustmentTotal;
-                            transactionStatementDto.AccountAdjustments = accountAdjustments;
-                        }
-
-                        var transactionStatement = await GetNewTransaction(customerAgreementId, ctdateFilter, meter.MeterNumber, dateFilter);
-                        var totalAmount = transactionStatement.LastOrDefault()?.TotalAmount;
-                        summaryDto.OpeningBalance = Convert.ToDecimal(summaryDto.OpeningBalance) - Convert.ToDecimal(totalAmount);
-                        if (transactionStatement.Any())
-                        {
-                            foreach (var transaction in transactionStatement)
-                            {
-                                if (transaction.AccountTransType == "BILLING_CALC")
+                                foreach (var transaction in transactionStatement)
                                 {
+                                    if (transaction.AccountTransType == "BILLING_CALC")
+                                    {
 
-                                    summaryDto.TotalBillingcalculations += Math.Round(transaction.TotalAmount, 2);
-                                }
-                                if (transaction.AccountTransType == "ADJUSTMENT")
-                                {
-                                    summaryDto.TotalAdjustments += Math.Round(transaction.TotalAmount, 2);
-                                }
-                                if (transaction.AccountTransType.Contains("DEPOSIT"))
-                                {
-                                    summaryDto.TotalDeposit += Math.Round(transaction.TotalAmount, 2);
+                                        summaryDto.TotalBillingcalculations += Math.Round(transaction.TotalAmount, 2);
+                                    }
+                                    if (transaction.AccountTransType == "ADJUSTMENT")
+                                    {
+                                        summaryDto.TotalAdjustments += Math.Round(transaction.TotalAmount, 2);
+                                    }
+                                    if (transaction.AccountTransType.Contains("DEPOSIT"))
+                                    {
+                                        summaryDto.TotalDeposit += Math.Round(transaction.TotalAmount, 2);
+                                    }
                                 }
                             }
+
+
+                            summaryDto.Transaction = transactionStatement;
+
                         }
-
-
-                        summaryDto.Transaction = transactionStatement;
-
                     }
                 }
-            }
 
+                
+            }
             return summaryDto;
         }
 
@@ -364,7 +364,7 @@ IEmailTemplateRepository emailTemplateRepository)
 
                             var accountTrasactions = await _masterApiConnectService.GetAccountTransactions(accountTransactionUrl).ConfigureAwait(false);
 
-                         
+
 
                             if (accountTrasactions != null)
                             {
@@ -392,7 +392,7 @@ IEmailTemplateRepository emailTemplateRepository)
                                                                 AccountTransType = g.Key.ToString(),
                                                                 ResultantBalance = g.Sum(t => t.ResultantBalance)
                                                             }).AsEnumerable();
-                               
+
                                 var accountAdjustments = (from t in accountTrasactions.Data
                                                           where t.AccountTransType == "ADJUSTMENT"
                                                           select new AccountAdjustment
@@ -407,8 +407,7 @@ IEmailTemplateRepository emailTemplateRepository)
 
                             }
 
-
-                            var transactionStatement = await GetNewTransaction(customerAgreementId, ctdateFilter, meter.MeterNumber, dateFilter).ConfigureAwait(false);
+                            var transactionStatement = await GetNewTransaction(customerAgreementId, ctdateFilter, meter.MeterNumber, dateFilter,customerAccountId).ConfigureAwait(false);
 
                             var totalAmount = transactionStatement.LastOrDefault()?.TotalAmount;
                             summaryDto.OpeningBalance = Convert.ToDecimal(summaryDto.OpeningBalance) - Convert.ToDecimal(totalAmount);
@@ -588,13 +587,14 @@ IEmailTemplateRepository emailTemplateRepository)
             }
             return transactionStatementDto;
         }
-        private async Task<IEnumerable<TransactionData>> GetNewTransaction(string customerAgreementId, string dateFilter, string meterNumber, string acctranDateFilter)
+        private async Task<IEnumerable<TransactionData>> GetNewTransaction(string customerAgreementId, string dateFilter, string meterNumber, string acctranDateFilter, string customerAccountId)
         {
             var transactionStatementDto = new TransactionStatement();
             var AccountReference = "";
             var ResultantBalance = "";
             var OurReference = "";
-
+            double txnFee = 0;
+            string txnId = string.Empty;
             var paging = "&paging=(limit)(250)(offset)(0)";
 
             var scheduledCustomerTransUrl = _masterApiSetting.BaseUrl + _masterApiSetting.CustomerTransApi + "?customerAgreementId=" + customerAgreementId
@@ -606,8 +606,23 @@ IEmailTemplateRepository emailTemplateRepository)
             {
                 Data = new List<Domain.Models.Dto.Transaction.Transaction>()
             };
-            var scheduleddata = await _masterApiConnectService.GetCustomerTransactions(scheduledCustomerTransUrl).ConfigureAwait(false);
-            var getData = await _masterApiConnectService.GetCustomerTransactions(vendCustomerTransUrl).ConfigureAwait(false);
+            //var scheduleddata = await _masterApiConnectService.GetCustomerTransactions(scheduledCustomerTransUrl).ConfigureAwait(false);
+            //var getData = await _masterApiConnectService.GetCustomerTransactions(vendCustomerTransUrl).ConfigureAwait(false);
+            //if (getData != null)
+            //    data.Data.AddRange(getData.Data);
+            //if (scheduleddata != null)
+            //    data.Data.AddRange(scheduleddata.Data);
+
+
+            var scheduledTask = _masterApiConnectService.GetCustomerTransactions(scheduledCustomerTransUrl);
+
+            var vendTask = _masterApiConnectService.GetCustomerTransactions(vendCustomerTransUrl);
+
+            await Task.WhenAll(scheduledTask, vendTask);
+
+            var scheduleddata = await scheduledTask;
+
+            var getData = await vendTask;
             if (getData != null)
                 data.Data.AddRange(getData.Data);
             if (scheduleddata != null)
@@ -630,163 +645,345 @@ IEmailTemplateRepository emailTemplateRepository)
             var accountAdjustmentTransactions = new AccountTransactionApiModel();
             var result = new List<TransactionData>();
 
-            var meterUrl = _masterApiSetting.BaseUrl + _masterApiSetting.MeterNumberApi + "?meter.meterNum=" + meterNumber.ToUpper() + "&paging=(limit)(5)(offset)(0)";
-            var meterResult = await _masterApiConnectService.GetMeter(meterUrl).ConfigureAwait(false);
+            //var meterUrl = _masterApiSetting.BaseUrl + _masterApiSetting.MeterNumberApi + "?meter.meterNum=" + meterNumber.ToUpper() + "&paging=(limit)(5)(offset)(0)";
+            //var meterResult = await _masterApiConnectService.GetMeter(meterUrl).ConfigureAwait(false);
 
-            if (meterResult != null)
+            //if (meterResult != null)
+            //{
+            //    var meterId = meterResult.Data[0].Meter.Id;
+            //    var customerAccountId = meterResult.Data[0].CustomerAccount.Id;
+            if (!string.IsNullOrEmpty(customerAccountId))
             {
-                var meterId = meterResult.Data[0].Meter.Id;
-                var customerAccountId = meterResult.Data[0].CustomerAccount.Id;
                 var accountTransactionUrl = _masterApiSetting.BaseUrl + _masterApiSetting.AccountTransApi + "?filter=(customerAccountId)(EQ)(" + customerAccountId + ")" + paging + acctranDateFilter;
                 accountTrasactions = await _masterApiConnectService.GetAccountTransactions(accountTransactionUrl).ConfigureAwait(false);
-
             }
+            var accountMap = accountTrasactions.Data.Where(x => !string.IsNullOrEmpty(x.AccountRef))
+                           .GroupBy(x => x.AccountRef)
+                           .ToDictionary(g => g.Key, g => g.First());
+            //}
+
+            //if (data != null && accountTrasactions != null)
+            //{
+            //    // data.Data = data.Data.OrderByDescending(t => t.TransDate).ToList();
+            //    //data.Data = data.Data.OrderBy(t => t.ReceiptNum).ToList();
+            //    //accountTrasactions.Data = accountTrasactions.Data.OrderBy(t => t.AccountRef).ToList();
+            //    //foreach (var tran in data.Data)
+            //    //{
+            //    //    decimal resultantBalance = 0;
+            //    //    string TransactionType = "";
+
+            //    //    var balance = accountTrasactions.Data
+            //    //                            .FirstOrDefault(t => t.AccountRef != null && t.AccountRef.Equals(tran.ReceiptNum, StringComparison.OrdinalIgnoreCase));
+            //    //    var TransType = accountTrasactions.Data
+            //    //                            .FirstOrDefault(t => t.AccountRef != null && t.AccountRef.Equals(tran.ReceiptNum, StringComparison.OrdinalIgnoreCase));
+
+
+
+            //    //    //var balance = accountTrasactions.Data.Where(t => t.AccountRef != null).FirstOrDefault(t => t.AccountRef.Equals(tran.ReceiptNum));
+            //    //    //var accountTransType= accountTrasactions.Data.Where(t => t.AccountTransType != null).FirstOrDefault(t => t.AccountTransType.Equals(tran.ReceiptNum));
+            //    //    if (balance != null)
+            //    //    {
+            //    //        resultantBalance = Convert.ToDecimal(string.Format("{0:F2}", balance.ResultantBalance));
+            //    //    }
+            //    //    if (TransType != null)
+            //    //    {
+            //    //        TransactionType = TransType.AccountTransType;
+            //    //    }
+
+            //    var transactionModel = (from t in data.Data
+            //                            select new TransactionModel
+            //                            {
+            //                                Usage = t.CustomerTransItems.Sum(x => x.Units),
+            //                                Cost = t.CustomerTransItems.Sum(x => x.AmtInclTax),
+            //                                TransactionDate = t.TransDate.ToString("dd-MM-yyyy"),
+            //                                Network = 0,
+            //                                Vending = 0,
+            //                                Vat = 0,
+            //                                TotalR = t.CustomerTransItems.Sum(x => x.AmtInclTax)
+            //                            }).AsEnumerable();
+            //    transactionStatementDto.Transactions = transactionModel;
+            //    transactionStatementDto.Totals = new Total
+            //    {
+            //        Usage = transactionModel.Sum(t => t.Usage),
+            //        Cost = transactionModel.Sum(t => t.Cost),
+            //        Network = transactionModel.Sum(t => t.Network),
+            //        Vending = transactionModel.Sum(t => t.Vending),
+            //        Vat = transactionModel.Sum(t => t.Vat),
+            //        TotalR = transactionModel.Sum(t => t.TotalR)
+            //    };
+            //    data.Data = data.Data.OrderByDescending(t => t.ReceiptNum).ToList();
+            //    accountTrasactions.Data = accountTrasactions.Data.OrderByDescending(t => t.AccountRef).ToList();
+
+            //    accountAdjustmentTransactions = new AccountTransactionApiModel
+            //    {
+            //        Data = accountTrasactions.Data
+            //           .Where(t => t.AccountRef != null && t.AccountTransType.Equals("ADJUSTMENT", StringComparison.OrdinalIgnoreCase))
+            //           .ToList()
+            //    };
+
+            //    accountAdjustmentTransactions.Data = accountAdjustmentTransactions.Data.OrderByDescending(t => t.AccountRef).ToList();
+
+            //    foreach (var tran in data.Data)
+            //    {
+
+            //        decimal resultantBalance = 0;
+            //        string TransactionType = "";
+
+            //        var balance = accountTrasactions.Data
+            //                       .FirstOrDefault(t => t.AccountRef != null && t.AccountRef.Equals(tran.ReceiptNum, StringComparison.OrdinalIgnoreCase));
+            //        var transType = accountTrasactions.Data
+            //                            .FirstOrDefault(t => t.AccountRef != null && t.AccountRef.Equals(tran.ReceiptNum, StringComparison.OrdinalIgnoreCase));
+
+
+            //        double txnFee = await _topUpRepository.GetTransactionNoFeeFromRctNum(tran.ReceiptNum);
+            //        string TxnId = await _topUpRepository.GetTransactionNoFromRctNum(tran.ReceiptNum);
+            //        if (balance != null)
+            //        {
+            //            resultantBalance = Convert.ToDecimal(string.Format("{0:F2}", balance.ResultantBalance));
+            //        }
+            //        if (transType != null)
+            //        {
+            //            TransactionType = transType.AccountTransType;
+            //        }
+            //        var transaction = new TransactionData
+            //        {
+            //            Date = tran.TransDate.ToString("dd-MM-yyyy HH:mm"),
+            //            Meter = tran.ServiceResource + " (" + tran.MeterNumber + ")",
+            //            TaxAmount = Convert.ToDecimal(string.Format("{0:F}", tran.AmtTax)),
+            //            TotalAmount = Convert.ToDecimal(string.Format("{0:F2}", tran.AmtInclTax)),
+            //            ResultantBalance = resultantBalance,
+            //            AccountTransType = TransactionType == "DEPOSIT" ? TransactionType + "(" + tran.ReceiptNum + ")" : TransactionType,
+            //            ReceiptNumber = tran.ReceiptNum,
+            //            //OurRef=tran.o
+            //            TransactionId = TxnId,
+            //            TransactionFee = txnFee,
+            //            Tariff = tran.Tariff,
+
+
+
+
+            //        };
+
+            //        if (transaction.AccountTransType.Contains("DEPOSIT"))
+            //        {
+
+            //            transaction.TotalAmount = +transaction.TotalAmount;
+
+            //        }
+            //        else
+            //        {
+            //            transaction.TotalAmount = -transaction.TotalAmount;
+            //        }
+            //        if (tran.CustomerTransItems != null && tran.CustomerTransItems.Any())
+            //        {
+            //            decimal tenderedAmount = 0;
+            //            transaction.Unit = tran.CustomerTransItems.Sum(t => t.Units);
+            //            var details = new List<TCustomerTransItem>();
+            //            foreach (var item in tran.CustomerTransItems)
+            //            {
+            //                transactionTypeMap.TryGetValue(item.TransItemType, out var typeDescription);
+
+            //                details.Add(new TCustomerTransItem
+            //                {
+
+            //                    Amount = Convert.ToDecimal(string.Format("{0:F2}", item.AmtInclTax)),
+            //                    VAT = Convert.ToDecimal(string.Format("{0:F2}", item.AmtTax)),
+            //                    Description = item.Description,
+            //                    Type = typeDescription ?? "Unknown Type",
+            //                    Units = item.Units,
+            //                    Tariff = item.Tariff
+
+            //                });
+            //                if (transaction.AccountTransType.Contains("DEPOSIT"))
+            //                {
+            //                    tenderedAmount += Convert.ToDecimal(string.Format("{0:F2}", item.AmtInclTax));
+            //                }
+            //            }
+            //            if (transaction.AccountTransType.Contains("DEPOSIT"))
+            //            {
+            //                tenderedAmount += Convert.ToDecimal(txnFee);
+            //            }
+            //            transaction.Details = details;
+            //            transaction.TenderedAmount = tenderedAmount;
+            //            var depositTransaction = transaction.Details
+            //                                    .FirstOrDefault(t => t.Type != null && t.Type.Equals("Deposit", StringComparison.OrdinalIgnoreCase));
+
+            //            if (depositTransaction != null)
+            //            {
+            //                transaction.TotalAmount = depositTransaction.Amount;
+            //            }
+
+            //        }
+
+            //        result.Add(transaction);
+            //    }
+
+            //    foreach (var accTran in accountAdjustmentTransactions.Data)
+            //    {
+
+            //        decimal resultantBalance = 0;
+            //        string TransactionType = "";
+            //        string comment = "";
+            //        var balance = accountTrasactions.Data
+            //                                         .FirstOrDefault(t => t.AccountRef != null && t.AccountTransType.Equals("Adjustment", StringComparison.OrdinalIgnoreCase));
+            //        var transType = accountTrasactions.Data
+            //                            .FirstOrDefault(t => t.AccountRef != null && t.AccountTransType.Equals("Adjustment", StringComparison.OrdinalIgnoreCase));
+            //        if (balance != null)
+            //        {
+            //            resultantBalance = Convert.ToDecimal(string.Format("{0:F2}", balance.ResultantBalance));
+            //        }
+            //        if (transType != null)
+            //        {
+            //            TransactionType = transType.AccountTransType;
+            //            comment = transType.Comment;
+            //        }
+            //        var transaction = new TransactionData
+            //        {
+            //            Date = accTran.TransDate.ToString("dd-MM-yyyy HH:mm"),
+            //            Meter = "Account Adjustment",
+            //            TaxAmount = Convert.ToDecimal(string.Format("{0:F2}", accTran.AmtTax)),
+            //            TotalAmount = Convert.ToDecimal(string.Format("{0:F2}", accTran.AmtInclTax)),
+            //            ResultantBalance = resultantBalance,
+            //            AccountTransType = TransactionType,
+            //            OurRef = accTran.OurRef,
+            //            Comment = comment,
+            //            Tariff = accTran.Tariff,
+
+            //        };
+            //        if (transaction.AccountTransType.Contains("DEPOSIT"))
+            //        {
+            //            transaction.TotalAmount = +transaction.TotalAmount;
+
+            //        }
+
+            //        //if (transaction.AccountTransType.Contains("BILLING_CALC"))
+            //        //{
+            //        //    if (transaction.TotalAmount.ToString().Contains("-"))
+            //        //    {
+            //        //        transaction.TotalAmount = transaction.TotalAmount;
+            //        //    }
+            //        //    else
+            //        //    {
+            //        //        transaction.TotalAmount = -transaction.TotalAmount;
+            //        //    }
+            //        //}
+
+
+            //        result.Add(transaction);
+            //    }
+            //}
+
+
+
 
             if (data != null && accountTrasactions != null)
             {
-                // data.Data = data.Data.OrderByDescending(t => t.TransDate).ToList();
-                //data.Data = data.Data.OrderBy(t => t.ReceiptNum).ToList();
-                //accountTrasactions.Data = accountTrasactions.Data.OrderBy(t => t.AccountRef).ToList();
-                //foreach (var tran in data.Data)
-                //{
-                //    decimal resultantBalance = 0;
-                //    string TransactionType = "";
-
-                //    var balance = accountTrasactions.Data
-                //                            .FirstOrDefault(t => t.AccountRef != null && t.AccountRef.Equals(tran.ReceiptNum, StringComparison.OrdinalIgnoreCase));
-                //    var TransType = accountTrasactions.Data
-                //                            .FirstOrDefault(t => t.AccountRef != null && t.AccountRef.Equals(tran.ReceiptNum, StringComparison.OrdinalIgnoreCase));
-
-
-
-                //    //var balance = accountTrasactions.Data.Where(t => t.AccountRef != null).FirstOrDefault(t => t.AccountRef.Equals(tran.ReceiptNum));
-                //    //var accountTransType= accountTrasactions.Data.Where(t => t.AccountTransType != null).FirstOrDefault(t => t.AccountTransType.Equals(tran.ReceiptNum));
-                //    if (balance != null)
-                //    {
-                //        resultantBalance = Convert.ToDecimal(string.Format("{0:F2}", balance.ResultantBalance));
-                //    }
-                //    if (TransType != null)
-                //    {
-                //        TransactionType = TransType.AccountTransType;
-                //    }
-
-                var transactionModel = (from t in data.Data
-                                        select new TransactionModel
-                                        {
-                                            Usage = t.CustomerTransItems.Sum(x => x.Units),
-                                            Cost = t.CustomerTransItems.Sum(x => x.AmtInclTax),
-                                            TransactionDate = t.TransDate.ToString("dd-MM-yyyy"),
-                                            Network = 0,
-                                            Vending = 0,
-                                            Vat = 0,
-                                            TotalR = t.CustomerTransItems.Sum(x => x.AmtInclTax)
-                                        }).AsEnumerable();
-                transactionStatementDto.Transactions = transactionModel;
-                transactionStatementDto.Totals = new Total
-                {
-                    Usage = transactionModel.Sum(t => t.Usage),
-                    Cost = transactionModel.Sum(t => t.Cost),
-                    Network = transactionModel.Sum(t => t.Network),
-                    Vending = transactionModel.Sum(t => t.Vending),
-                    Vat = transactionModel.Sum(t => t.Vat),
-                    TotalR = transactionModel.Sum(t => t.TotalR)
-                };
-                data.Data = data.Data.OrderByDescending(t => t.ReceiptNum).ToList();
-                accountTrasactions.Data = accountTrasactions.Data.OrderByDescending(t => t.AccountRef).ToList();
-
                 accountAdjustmentTransactions = new AccountTransactionApiModel
                 {
-                    Data = accountTrasactions.Data
-                       .Where(t => t.AccountRef != null && t.AccountTransType.Equals("ADJUSTMENT", StringComparison.OrdinalIgnoreCase))
-                       .ToList()
+                    Data = accountTrasactions.Data.Where(t => t.AccountRef != null && t.AccountTransType.Equals("ADJUSTMENT", StringComparison.OrdinalIgnoreCase)).ToList()
                 };
 
-                accountAdjustmentTransactions.Data = accountAdjustmentTransactions.Data.OrderByDescending(t => t.AccountRef).ToList();
+                decimal reverseEnergyTotalAmount = 0;
+                decimal reverseEnergyTotalTax = 0;
+                decimal reverseEnergyTotalUnits = 0;
+
+                var receiptNumbers = data.Data.Where(x => !string.IsNullOrEmpty(x.ReceiptNum)).Select(x => x.ReceiptNum).Distinct().ToList();
+
+                var transactionFees = await _topUpRepository.GetTransactionFeesByReceiptNumbers(receiptNumbers).ConfigureAwait(false);
 
                 foreach (var tran in data.Data)
                 {
-
                     decimal resultantBalance = 0;
                     string TransactionType = "";
 
-                    var balance = accountTrasactions.Data
-                                   .FirstOrDefault(t => t.AccountRef != null && t.AccountRef.Equals(tran.ReceiptNum, StringComparison.OrdinalIgnoreCase));
-                    var transType = accountTrasactions.Data
-                                        .FirstOrDefault(t => t.AccountRef != null && t.AccountRef.Equals(tran.ReceiptNum, StringComparison.OrdinalIgnoreCase));
+                    accountMap.TryGetValue(tran.ReceiptNum, out var accountTran);
 
+                    transactionFees.TryGetValue(tran.ReceiptNum, out var resultDto);
 
-                    double txnFee = await _topUpRepository.GetTransactionNoFeeFromRctNum(tran.ReceiptNum);
-                    string TxnId = await _topUpRepository.GetTransactionNoFromRctNum(tran.ReceiptNum);
-                    if (balance != null)
+                    if (resultDto != null)
                     {
-                        resultantBalance = Convert.ToDecimal(string.Format("{0:F2}", balance.ResultantBalance));
+                        txnFee = resultDto.transaction_fee;
+                        txnId = resultDto.transaction_id;
                     }
-                    if (transType != null)
+                    else
                     {
-                        TransactionType = transType.AccountTransType;
+                        txnFee = 0;
+                        txnId = string.Empty;
                     }
+
+                    if (accountTran != null)
+                    {
+                        resultantBalance = Convert.ToDecimal(string.Format("{0:F2}", accountTran.ResultantBalance));
+                        TransactionType = accountTran.AccountTransType;
+                    }
+
                     var transaction = new TransactionData
                     {
                         Date = tran.TransDate.ToString("dd-MM-yyyy HH:mm"),
                         Meter = tran.ServiceResource + " (" + tran.MeterNumber + ")",
-                        TaxAmount = Convert.ToDecimal(string.Format("{0:F}", tran.AmtTax)),
+                        TaxAmount = Convert.ToDecimal(string.Format("{0:F2}", tran.AmtTax)),
                         TotalAmount = Convert.ToDecimal(string.Format("{0:F2}", tran.AmtInclTax)),
                         ResultantBalance = resultantBalance,
                         AccountTransType = TransactionType == "DEPOSIT" ? TransactionType + "(" + tran.ReceiptNum + ")" : TransactionType,
                         ReceiptNumber = tran.ReceiptNum,
-                        //OurRef=tran.o
-                        TransactionId = TxnId,
-                        TransactionFee = txnFee,
-                        Tariff = tran.Tariff,
-
-
-
-
+                        TransactionId = txnId,
+                        TransactionFee = txnFee
                     };
 
-                    if (transaction.AccountTransType.Contains("DEPOSIT"))
+                    if (!string.IsNullOrEmpty(transaction.AccountTransType) && transaction.AccountTransType.Contains("DEPOSIT"))
                     {
-
                         transaction.TotalAmount = +transaction.TotalAmount;
-
                     }
                     else
                     {
                         transaction.TotalAmount = -transaction.TotalAmount;
                     }
+
                     if (tran.CustomerTransItems != null && tran.CustomerTransItems.Any())
                     {
                         decimal tenderedAmount = 0;
                         transaction.Unit = tran.CustomerTransItems.Sum(t => t.Units);
                         var details = new List<TCustomerTransItem>();
+
                         foreach (var item in tran.CustomerTransItems)
                         {
                             transactionTypeMap.TryGetValue(item.TransItemType, out var typeDescription);
+                            
 
-                            details.Add(new TCustomerTransItem
-                            {
-
-                                Amount = Convert.ToDecimal(string.Format("{0:F2}", item.AmtInclTax)),
-                                VAT = Convert.ToDecimal(string.Format("{0:F2}", item.AmtTax)),
-                                Description = item.Description,
-                                Type = typeDescription ?? "Unknown Type",
-                                Units = item.Units,
-                                Tariff=item.Tariff
-                                
-                            });
-                            if (transaction.AccountTransType.Contains("DEPOSIT"))
+                            if (!string.IsNullOrEmpty(transaction.AccountTransType) && transaction.AccountTransType.Contains("DEPOSIT"))
                             {
                                 tenderedAmount += Convert.ToDecimal(string.Format("{0:F2}", item.AmtInclTax));
                             }
+                            //if (transaction.AccountTransType.Contains("DEPOSIT"))
+                            //{
+                            //    tenderedAmount += Convert.ToDecimal(txnFee);
+                            //}
+                            transactionTypeMap.TryGetValue(item.TransItemType, out typeDescription);
+                            string resolvedType = typeDescription ?? "Unknown Type";
+
+                            details.Add(
+                                         new TCustomerTransItem
+                                         {
+                                             Amount = Convert.ToDecimal(string.Format("{0:F2}", item.AmtInclTax)),
+                                             VAT = Convert.ToDecimal(string.Format("{0:F2}", item.AmtTax)),
+                                             Description = item.Description,
+                                             Type = resolvedType,
+                                             Units = item.Units,
+                                             TransactionItemType = item.TransItemType
+                                         });
+
+
                         }
-                        if (transaction.AccountTransType.Contains("DEPOSIT"))
+
+
+                        if (!string.IsNullOrEmpty(transaction.AccountTransType) && transaction.AccountTransType.Contains("DEPOSIT"))
                         {
                             tenderedAmount += Convert.ToDecimal(txnFee);
                         }
+
                         transaction.Details = details;
                         transaction.TenderedAmount = tenderedAmount;
-                        var depositTransaction = transaction.Details
-                                                .FirstOrDefault(t => t.Type != null && t.Type.Equals("Deposit", StringComparison.OrdinalIgnoreCase));
+                        var depositTransaction = transaction.Details.FirstOrDefault(t => t.Type != null && t.Type.Equals("Deposit", StringComparison.OrdinalIgnoreCase));
 
                         if (depositTransaction != null)
                         {
@@ -800,61 +997,22 @@ IEmailTemplateRepository emailTemplateRepository)
 
                 foreach (var accTran in accountAdjustmentTransactions.Data)
                 {
-
-                    decimal resultantBalance = 0;
-                    string TransactionType = "";
-                    string comment = "";
-                    var balance = accountTrasactions.Data
-                                                     .FirstOrDefault(t => t.AccountRef != null && t.AccountTransType.Equals("Adjustment", StringComparison.OrdinalIgnoreCase));
-                    var transType = accountTrasactions.Data
-                                        .FirstOrDefault(t => t.AccountRef != null && t.AccountTransType.Equals("Adjustment", StringComparison.OrdinalIgnoreCase));
-                    if (balance != null)
-                    {
-                        resultantBalance = Convert.ToDecimal(string.Format("{0:F2}", balance.ResultantBalance));
-                    }
-                    if (transType != null)
-                    {
-                        TransactionType = transType.AccountTransType;
-                        comment = transType.Comment;
-                    }
                     var transaction = new TransactionData
                     {
                         Date = accTran.TransDate.ToString("dd-MM-yyyy HH:mm"),
                         Meter = "Account Adjustment",
-                        TaxAmount = Convert.ToDecimal(string.Format("{0:F2}", accTran.AmtTax)),
-                        TotalAmount = Convert.ToDecimal(string.Format("{0:F2}", accTran.AmtInclTax)),
-                        ResultantBalance = resultantBalance,
-                        AccountTransType = TransactionType,
-                        OurRef=accTran.OurRef,
-                        Comment = comment,
-                        Tariff=accTran.Tariff,
-
+                        TaxAmount = Convert.ToDecimal( string.Format("{0:F2}", accTran.AmtTax)),
+                        TotalAmount = Convert.ToDecimal( string.Format("{0:F2}", accTran.AmtInclTax)),
+                        ResultantBalance = Convert.ToDecimal( string.Format("{0:F2}", accTran.ResultantBalance)),
+                        AccountTransType = accTran.AccountTransType,
+                        Comment = accTran.Comment,
+                        OurRef = accTran.OurRef,
+                        Tariff = accTran.Tariff
                     };
-                    if (transaction.AccountTransType.Contains("DEPOSIT"))
-                    {
-                        transaction.TotalAmount = +transaction.TotalAmount;
-
-                    }
-
-                    //if (transaction.AccountTransType.Contains("BILLING_CALC"))
-                    //{
-                    //    if (transaction.TotalAmount.ToString().Contains("-"))
-                    //    {
-                    //        transaction.TotalAmount = transaction.TotalAmount;
-                    //    }
-                    //    else
-                    //    {
-                    //        transaction.TotalAmount = -transaction.TotalAmount;
-                    //    }
-                    //}
-
-
                     result.Add(transaction);
                 }
             }
-            result = result
-                      .OrderByDescending(t => DateTime.ParseExact(t.Date, "dd-MM-yyyy HH:mm", CultureInfo.InvariantCulture))
-                      .ToList();
+            result = result.OrderByDescending(t => DateTime.ParseExact(t.Date, "dd-MM-yyyy HH:mm", CultureInfo.InvariantCulture)) .ToList();
             return result;
         }
 
@@ -1071,8 +1229,13 @@ IEmailTemplateRepository emailTemplateRepository)
                                 }
                     </style> ";
             #endregion
-
-            var groupedTransaction = summaryDto.Transaction.GroupBy(t => t.Meter);
+            var filtered = summaryDto.Transaction.ToList()
+                                .Where(t => {
+                                    var type = t.AccountTransType?.Split('(')[0].Trim();
+                                    return !string.Equals(type, "DEPOSIT", StringComparison.OrdinalIgnoreCase);
+                                })
+                                .ToList();
+            var groupedTransaction = filtered.GroupBy(t => t.Meter);
             if (groupedTransaction != null)
             {
                 elecVat = groupedTransaction
@@ -1097,8 +1260,19 @@ IEmailTemplateRepository emailTemplateRepository)
                           .Sum(g => g.Sum(t => t.TotalAmount)) + gasVat;
 
             }
-           decimal openingBalance= Convert.ToDecimal(string.Format("{0:F2}", summaryDto.OpeningBalance));
-            decimal closingBalance = Convert.ToDecimal(string.Format("{0:F2}", summaryDto.ClosingBalance));
+
+            decimal openingBalance = Math.Round(summaryDto.OpeningBalance, 2);
+            decimal closingBalance = Math.Round(summaryDto.ClosingBalance, 2);
+            decimal totalDeposit = Math.Round(summaryDto.TotalDeposit, 2);
+            decimal totalAdjustment = Math.Round(summaryDto.TotalAdjustments, 2);
+            decimal totalBillingCalculations = Math.Round(summaryDto.TotalBillingcalculations, 2);
+            //decimal totalAuxillary = Math.Round(summaryDto.TotalAuxiliary, 2);
+            CultureInfo zaCulture = new CultureInfo("en-Us");
+
+            string formattedOpenBalance = openingBalance.ToString("N2", zaCulture);
+            string formattedCloseBalance = closingBalance.ToString("N2", zaCulture);
+            string formattedTotalDeposit = totalDeposit.ToString("N2", zaCulture);
+            string formattedAdjustment = totalAdjustment.ToString("N2", zaCulture);
             string htmlContent = cssStyles + @"
            
 <div class='container'>
@@ -1188,45 +1362,45 @@ IEmailTemplateRepository emailTemplateRepository)
 <tr style='font-weight: bold; font-size: 12px; padding-top: 5px; padding-bottom: 5px; border: 1px solid #B7B7B7; ' class='bg-gray'>
 <td style='padding-top: 5px; padding-bottom: 5px; padding-left: 10px;'>Opening Balance </td>
 <td style=''></td>
-<td style='text-align: center; padding-right: 8px;'> R " + Convert.ToDecimal(openingBalance, CultureInfo.InvariantCulture) + @"</td>
+<td style='text-align: center; padding-right: 8px;'> R " + formattedOpenBalance + @"</td>
 </tr>
 <tr style=' font-size: 12px; '>
 <td style='padding-top: 5px; padding-bottom: 5px;font-weight: bold; padding-left: 10px;' >Payment Received</td>
 <td></td>
-<td style='text-align: center; padding-right: 8px; padding-top:5px; padding-bottom: 5px;'> R " + Convert.ToDecimal(string.Format("{0:F2}", summaryDto.TotalDeposit)) + @"</td>
+<td style='text-align: center; padding-right: 8px; padding-top:5px; padding-bottom: 5px;'> R " + formattedTotalDeposit  + @"</td>
 </tr>
 <tr style=' font-size: 12px; '>
 <td style='padding-top: 5px; padding-bottom: 5px;font-weight: bold; padding-left: 10px;' >Adjustments</td>
 <td></td>
-<td style='text-align: center; padding-right: 8px; padding-top:5px; padding-bottom: 5px;'> R " + Convert.ToDecimal(string.Format("{0:F2}", summaryDto.TotalAdjustments)) + @"</td>
+<td style='text-align: center; padding-right: 8px; padding-top:5px; padding-bottom: 5px;'> R " + formattedAdjustment + @"</td>
 </tr>
 <tr style='font-weight: bold; font-size: 13px; padding-top: 5px; padding-bottom: 5px; background-color: #F1F2F4; '>
 <td style='padding-top: 5px; padding-bottom: 5px; padding-left: 10px;'>Utilities </td>
 <td style='width: 23%;color: 003E52; text-align: left; padding-left: 14px;'>VAT</td>
-<td style='width: 22%; color: 003E52; text-align: center;'>Amount Incl VAT</td>
+<td style='width: 22%; color: 003E52; text-align: center;'>Amount Excl VAT</td>
 
 </tr>
 
 <tr style='font-size: 12px; padding-top: 10px; padding-bottom: 10px; '>
 <td style='padding-left: 23px; padding-top: 5px; padding-bottom: 5px;'>Electricity</td>
-<td style='padding-left: 5px; padding-top: 5px; padding-bottom: 5px;'>R " + elecVat + @"</td>
-<td style='padding-left: 5px; padding-top: 5px; padding-bottom: 5px;text-align: center;'>R " + elecIncludeVat + @"</td>
+<td style='padding-left: 5px; padding-top: 5px; padding-bottom: 5px;'>R " + elecVat.ToString("N2", new CultureInfo("en-Us")) + @"</td>
+<td style='padding-left: 5px; padding-top: 5px; padding-bottom: 5px;text-align: center;'>R " + elecIncludeVat.ToString("N2",new CultureInfo("en-Us")) + @"</td>
 </tr>
 <tr style='font-size: 12px; padding-top: 10px; padding-bottom: 10px; '>
 <td style='padding-left: 23px; padding-top: 5px; padding-bottom: 5px; '>Water</td>
-<td style='padding-left: 5px; padding-top: 5px; padding-bottom: 5px; '>R " + waterVat + @"</td>
-<td style='padding-left: 5px; padding-top: 5px; padding-bottom: 5px;text-align: center; '>R " + waterIncludeVat + @"</td>
+<td style='padding-left: 5px; padding-top: 5px; padding-bottom: 5px; '>R " + waterVat.ToString("N2", new CultureInfo("en-Us")) + @"</td>
+<td style='padding-left: 5px; padding-top: 5px; padding-bottom: 5px;text-align: center; '>R " + waterIncludeVat.ToString("N2", new CultureInfo("en-Us")) + @"</td>
 </tr>
 <tr style='font-size: 12px; padding-top: 5px; padding-bottom: 5px; '>
 <td style='padding-left: 23px;'>Gas</td>
-<td style='padding-left: 5px;'>R " + gasVat + @"</td>
-<td style='padding-left: 5px;text-align: center;'>R " + gasIncludeVat + @"</td>
+<td style='padding-left: 5px;'>R " + gasVat.ToString("N2", new CultureInfo("en-Us")) + @"</td>
+<td style='padding-left: 5px;text-align: center;'>R " + gasIncludeVat.ToString("N2", new CultureInfo("en-Us")) + @"</td>
 </tr>
 
 <tr style='font-weight: bold; font-size: 13px; padding-top: 5px; padding-bottom: 5px; background-color: #F1F2F4; border: 1px solid #B7B7B7;'>
 <td  style='padding-top: 5px; padding-bottom: 5px; padding-left: 10px;'>Closing Balance </td>
 <td style='font-size: 12px ;padding-top: 5px; padding-bottom: 5px;'></td>
-<td style='font-size: 12px; padding-top: 5px; padding-bottom: 5px;text-align: center;'>R " + Convert.ToDecimal(closingBalance,CultureInfo.InvariantCulture) + @"</td>
+<td style='font-size: 12px; padding-top: 5px; padding-bottom: 5px;text-align: center;'>R " + formattedCloseBalance + @"</td>
 </tr>
 </table>";
 
@@ -1256,14 +1430,14 @@ IEmailTemplateRepository emailTemplateRepository)
 
                     htmlContent += @"<tr><td>" + deptxn.Date.Split(' ')[0] + @"</td>
                                     <td>" + deptxn.ReceiptNumber + @"</td>
-                                    <td>R" + deptxn.TaxAmount + @"</td>
-                                    <td>R " + deptxn.TotalAmount + @"</td></tr>";
+                                    <td>R" + deptxn.TaxAmount.ToString("N2", new CultureInfo("en-Us")) + @"</td>
+                                    <td>R " + deptxn.TotalAmount.ToString("N2", new CultureInfo("en-Us")) + @"</td></tr>";
 
 
                 }
                 htmlContent += @"<tr class='total'><td colspan='2' style='text-align: left; padding-left: 80px; font-size: 14px;'>Total</td>";
-                htmlContent += @"<td>R " + Math.Round(totDepTax, 4).ToString("0.00") + @"</td>";
-                htmlContent += @"<td>R " + Math.Round(totDepAmount, 4).ToString("0.00") + @" </td></tr>";
+                htmlContent += @"<td>R " + Math.Round(totDepTax, 4).ToString("N2", new CultureInfo("en-Us")) + @"</td>";
+                htmlContent += @"<td>R " + Math.Round(totDepAmount, 4).ToString("N2", new CultureInfo("en-Us")) + @" </td></tr>";
                 htmlContent += @"</table>";
 
             }
@@ -1286,12 +1460,12 @@ IEmailTemplateRepository emailTemplateRepository)
 
                     htmlContent += @"<tr><td>" + adjtxn.Date.Split(' ')[0] + @"</td>
                                     <td>" + adjtxn.OurRef + @"</td>
-                                    <td>R " + adjtxn.TaxAmount + @"</td>
-                                    <td>R " + adjtxn.TotalAmount + @"</td></tr>";
+                                    <td>R " + adjtxn.TaxAmount.ToString("N2", new CultureInfo("en-Us")) + @"</td>
+                                    <td>R " + adjtxn.TotalAmount.ToString("N2", new CultureInfo("en-Us")) + @"</td></tr>";
                 }
                 htmlContent += @"<tr class='total'><td colspan='2' style='text-align: left; padding-left: 80px; font-size: 14px;'>Total</td>";
-                htmlContent += @"<td>R " + Math.Round(totTax, 4).ToString("0.00") + @"</b></td>";
-                htmlContent += @"<td>R " + Math.Round(totAmount, 4).ToString("0.00") + @" </td></tr>";
+                htmlContent += @"<td>R " + Math.Round(totTax, 4).ToString("N2", new CultureInfo("en-Us")) + @"</b></td>";
+                htmlContent += @"<td>R " + Math.Round(totAmount, 4).ToString("N2", new CultureInfo("en-Us")) + @" </td></tr>";
                 htmlContent += @"</table>";
 
 
@@ -1302,7 +1476,7 @@ IEmailTemplateRepository emailTemplateRepository)
             List<string> meterSections = new List<string>();
 
 
-            var groupedTransactions = summaryDto.Transaction.GroupBy(t => t.Meter);
+            var groupedTransactions = filtered.GroupBy(t => t.Meter);
 
             int rowCount = 0;
             double totalUnit = 0;
@@ -1356,9 +1530,9 @@ IEmailTemplateRepository emailTemplateRepository)
 
                         htmlContent += @"<tr><td>" + day.Date + @"</td>";
                         htmlContent += @"<td class='tariff-cell'>" + day.Tariff + @"</td>";
-                        htmlContent += @"<td>" + day.TotalUnit.ToString("0.00") + @"</td>";
-                        htmlContent += @"<td>R " + day.TotalTaxAmount.ToString("0.00") + @"</td>";
-                        htmlContent += @"<td>R " + day.TotalAmount.ToString("0.00") + @"</td>";
+                        htmlContent += @"<td>" + day.TotalUnit.ToString("N2", new CultureInfo("en-Us")) + @"</td>";
+                        htmlContent += @"<td>R " + day.TotalTaxAmount.ToString("N2", new CultureInfo("en-Us")) + @"</td>";
+                        htmlContent += @"<td>R " + day.TotalAmount.ToString("N2", new CultureInfo("en-Us")) + @"</td>";
                         htmlContent += @"</tr>";
                     }
 
@@ -1379,8 +1553,8 @@ IEmailTemplateRepository emailTemplateRepository)
                     rowCount++;
 
                     htmlContent += @"<tr class='total'><td colspan='3' style='text-align: left; padding-left: 80px; font-size: 14px;'>Total</td>";
-                    htmlContent += @"<td>R " + Math.Round(totalUnit, 4).ToString("0.00") + @"</td>";
-                    htmlContent += @"<td>R " + Math.Round(totalAmount, 4).ToString("0.00") + @" </td></tr>";
+                    htmlContent += @"<td>R " + Math.Round(totalUnit, 4).ToString("N2", new CultureInfo("en-Us")) + @"</td>";
+                    htmlContent += @"<td>R " + Math.Round(totalAmount, 4).ToString("N2", new CultureInfo("en-Us")) + @" </td></tr>";
                     htmlContent += @"</table>";
                     totalUnit = 0;
                     totalAmount = 0;
@@ -1678,6 +1852,6 @@ IEmailTemplateRepository emailTemplateRepository)
             await Task.Run(() => File.Delete(Path.Combine(path, fileName)));
         }
         /*<td style='text-align:right'><img src='" + relativePath + @"' alt='Logo' style='max-width: 100px; margin-bottom: 10px;'></td>*/
-        
+
     }
 }

@@ -88,6 +88,7 @@ namespace Ontec.Core.Application.Login.Handler.Queries
                 else
                     data.IsProfileComplete = true;
                 data.IsEstateEnable = user.IsEstateEnable;
+                data.Auxaccountdetails = user.Auxaccountdetails;
 
                 if (data != null && string.IsNullOrEmpty(data.EmailId) && !data.IsBlocked)
                 {
@@ -120,6 +121,10 @@ namespace Ontec.Core.Application.Login.Handler.Queries
                         DateTime currentdate = Convert.ToDateTime(DateTime.UtcNow);
                         TimeSpan objTimeSpan = currentdate - lastlogindate;
                         double Days = Convert.ToDouble(objTimeSpan.TotalDays);
+                        int loginYearDays = DateTime.IsLeapYear(lastlogindate.Year) ? 366 : 365;
+                        int currentYearDays = DateTime.IsLeapYear(currentdate.Year) ? 366 : 365;
+
+                        int months = ((currentdate.Year - lastlogindate.Year) * 12) + currentdate.Month - lastlogindate.Month;
                         EmailModelClass obj1 = new()
                         {
                             title = "Not logged in to system",
@@ -133,7 +138,7 @@ namespace Ontec.Core.Application.Login.Handler.Queries
                             companyId = request.CompanyId
                         };
 
-                        if (Days >= 172)
+                        if (currentdate > lastlogindate.AddYears(1))
                         {
                             if (commId.Any(c => c.Id == (int)CommunicationTypeEnum.Email))
                             {
@@ -143,56 +148,61 @@ namespace Ontec.Core.Application.Login.Handler.Queries
                             validatorResult.Errors.Add(new FluentValidation.Results.ValidationFailure
                             {
                                 PropertyName = nameof(GetUserByEmailQuery.Email),
-                                ErrorMessage = "Your account is deregister."
+                                ErrorMessage = "Your account has been deactivated due to prolonged inactivity.Please contact support to reactivate your account."
                             });
                             if (!validatorResult.IsValid)
                                 throw new ValidationException(validatorResult.Errors);
+                        }
+                        else
+                        {
+                            EmailModelClass obj = new()
+                            {
+
+                                title = "Signed in successfully",
+                                email = user.Email,
+                                forEvent = "SuccessFullLogin",
+                                subtitle = "",
+                                mobile = user.Mobile,
+                                propertyUser = user.UserName,
+                                body = "",
+                                documentPath = "",
+                                companyId = request.CompanyId
+                            };
+                            if (commId.Any(c => c.Id == (int)CommunicationTypeEnum.Email))
+                            {
+                                await _otpService.SendEventMail(obj).ConfigureAwait(false);
+                            }
+                            await _userRepository.UpdateLoginAttempt(user.Id, 0, false).ConfigureAwait(false);
                         }
                     }
                     catch (Exception ex)
                     {
                     }
+
                 }
 
-                await _userRepository.UpdateLoginAttempt(user.Id, 0, false).ConfigureAwait(false);
 
-                var emailTemplates = await _emailTemplateRepository.GetEmailTemplates().ConfigureAwait(false);
-                var loginEmail = emailTemplates.FirstOrDefault(g => g.Name.Equals("Login Alert Email"));
-                if (!string.IsNullOrEmpty(loginEmail.Html))
-                {
-                    string htmlTemplate = loginEmail.Html;
-                    var matches = Regex.Matches(loginEmail.Html, @"{{(.*?)}}");
-                    List<string> placeholders = matches.Cast<Match>()
-                                            .Select(m => m.Groups[1].Value) // Group[1] is the captured variable name
-                    .Distinct()
-                                            .ToList();
-                    var userDict = _genericRepository.ToDictionary(user);
-                    foreach (var key in placeholders)
-                    {
-                        if (userDict.TryGetValue(key, out var value))
-                        {
-                            loginEmail.Html = loginEmail.Html.Replace("{{" + key + "}}", user.FirstName);
-                        }
-                    }
-                    EmailModelClass obj = new()
-                    {
+                //var emailTemplates = await _emailTemplateRepository.GetEmailTemplates().ConfigureAwait(false);
+                //var loginEmail = emailTemplates.FirstOrDefault(g => g.Name.Equals("Login Alert Email"));
+                //if (!string.IsNullOrEmpty(loginEmail.Html))
+                //{
+                //    string htmlTemplate = loginEmail.Html;
+                //    var matches = Regex.Matches(loginEmail.Html, @"{{(.*?)}}");
+                //    List<string> placeholders = matches.Cast<Match>()
+                //                            .Select(m => m.Groups[1].Value) // Group[1] is the captured variable name
+                //    .Distinct()
+                //                            .ToList();
+                //    var userDict = _genericRepository.ToDictionary(user);
+                //    foreach (var key in placeholders)
+                //    {
+                //        if (userDict.TryGetValue(key, out var value))
+                //        {
+                //            loginEmail.Html = loginEmail.Html.Replace("{{" + key + "}}", user.FirstName);
+                //        }
+                //    }
 
-                        title = "Signed in successfully",
-                        email = user.Email,
-                        forEvent = "SuccessFullLogin",
-                        subtitle = "",
-                        mobile = user.Mobile,
-                        propertyUser = user.UserName,
-                        body = loginEmail.Html,
-                        documentPath = "",
-                        companyId = request.CompanyId
-                    };
-                    if (commId.Any(c => c.Id == (int)CommunicationTypeEnum.Email))
-                    {
-                        await _otpService.SendEventMail(obj).ConfigureAwait(false);
-                    }
-                }
-                await _userRepository.UpdateLastLoginDate(user.Id).ConfigureAwait(false);
+
+
 
 
                 if (data != null && !string.IsNullOrEmpty(request.Devicetoken) && request.Devicetoken != "string")

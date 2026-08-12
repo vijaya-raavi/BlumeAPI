@@ -20,7 +20,7 @@ namespace Ontec.Core.Domain.Interface.Consumer
         Task<IEnumerable<ConsumerGroupDto>> GetConsumerGroupsById(int userId);
         Task<int> RemoveConsumerFromGroup(int groupLinkId);
         Task<int> IsNotifcationGroupLinkIdExist(int groupLinkId);
-        Task<ConsumerMasterDto> NewGetConsumerMaster(int estateId);
+        Task<ConsumerMasterDto> NewGetConsumerMaster();
         Task<IEnumerable<PropertyCountDto>> ConsumerWisePropertyCount();
         Task<IEnumerable<MeterCountDto>> ConsumerWiseMeterCount();
         Task<IEnumerable<MeterNumberDto>> ConsumerWiseMeters();

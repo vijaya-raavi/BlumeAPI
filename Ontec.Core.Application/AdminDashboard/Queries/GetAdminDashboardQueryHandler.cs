@@ -47,7 +47,7 @@ namespace Ontec.Core.Application.TopUp.Queries
         public async Task<PaymentDashboardDto> Handle(GetPaymentDashboardQuery request, CancellationToken cancellationToken)
         {
             
-            return await _topupRepository.GetPaymentDashboard(request.EstateId).ConfigureAwait(false);
+            return await _topupRepository.GetPaymentDashboard().ConfigureAwait(false);
         }
         public async Task<AdminDashboardMastersDto> Handle(GetAdminDashboardMasterQuery request, CancellationToken cancellationToken)
         {
