@@ -30,6 +30,7 @@ namespace Ontec.Core.Application.ConfigurationSettings.Command
                                                 , IRequestHandler<AddUpdateRejectionReasonQuery, AddUpdateResultDto>
                                                 , IRequestHandler<UpdateStatusQuery, AddUpdateResultDto>
                                                 , IRequestHandler<UpdateBusinessHoursConfigurations, AddUpdateResultDto>
+                                                 , IRequestHandler<AddUpdateUtilityTypeDetailsCommandRequest, AddUpdateResultDto>
     {
         private readonly IConfigurationRepository _configurationRepo;
         private readonly IWorkContext _workContext;
@@ -277,6 +278,22 @@ namespace Ontec.Core.Application.ConfigurationSettings.Command
 
             await _configurationRepo.UpdateBusinessConfiguration(request).ConfigureAwait(false);
             response.Message = "Business hours  settings updated successfully!";
+
+            return response;
+        }
+        public async Task<AddUpdateResultDto> Handle(AddUpdateUtilityTypeDetailsCommandRequest request, CancellationToken cancellationToken)
+        {
+            request.TrimAllStrings();
+
+            var commonValidator = new AddUpdateUtilityTypeDetailsCommandRequestValidator(_meterRepository, _workContext, _userRepository);
+            var validatorResult = await commonValidator.ValidateAsync(request, cancellationToken);
+            if (!validatorResult.IsValid)
+                throw new ValidationException(validatorResult.Errors);
+            var response = new AddUpdateResultDto();
+
+
+            await _configurationRepo.UpdateMeterUtilityTypeDailyTarget(request).ConfigureAwait(false);
+            response.Message = "Updated successfully!";
 
             return response;
         }

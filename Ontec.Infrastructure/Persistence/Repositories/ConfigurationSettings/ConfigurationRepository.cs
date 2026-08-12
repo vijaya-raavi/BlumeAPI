@@ -298,6 +298,14 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Configuration
                               WHERE id=@Id;
                                SELECT id from ohd_notificationgroups WHERE id=@Id;";
             }
+            if (request.UpdateTo == (int)UpdateStatusEnum.TopUp)
+            {
+                sQuery = @" UPDATE public.ohd_top_up_transactions
+                             SET status_id=@StatusId,
+                              modified_at=@ModifiedAt
+                              WHERE id=@Id;
+                               SELECT id from ohd_top_up_transactions WHERE id=@Id;";
+            }
             var parameters = new DynamicParameters();
             parameters.Add("@StatusId", request.StatusId);
             parameters.Add("@ModifiedAt", DateTime.UtcNow);
@@ -406,6 +414,31 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Configuration
                 return configurations;
             }
             catch (Exception ex) { throw ex; }
+        }
+        public async Task UpdateMeterUtilityTypeDailyTarget(AddUpdateUtilityTypeDetailsCommandRequest request)
+        {
+            try
+            {
+                foreach (var metertype in request.UtilityDailyTarget)
+                {
+                    var sQuery = @"UPDATE public.ohd_enum_meter_type
+	                                SET   modified_at=@ModifiedAt,
+                                           mindailytarget=@MinDailyTarget,
+                                           maxdailytarget=@MaxDailyTarget
+	                                WHERE id=@Id; 
+                                    SELECT id from ohd_enum_meter_type WHERE id=@Id;";
+                    var parameters = new DynamicParameters();
+                    parameters.Add("@Id", metertype.Id);
+                    parameters.Add("@ModifiedAt", DateTime.UtcNow);
+                    parameters.Add("@MinDailyTarget", metertype.MinDailyTarget);
+                    parameters.Add("@MaxDailyTarget", metertype.MaxDailyTarget);
+                    var result = await _genericRepository.ExecuteScalarAsync<int>(sQuery, parameters).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
         }
     }
 }

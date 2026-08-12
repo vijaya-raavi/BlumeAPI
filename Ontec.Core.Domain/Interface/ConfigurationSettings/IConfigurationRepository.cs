@@ -24,6 +24,7 @@ namespace Ontec.Core.Domain.Interface.Configuration
         Task UpdateBusinessConfiguration(UpdateBusinessHoursConfigurations request);
         Task<int> IsConfigIdExist(int id);
         Task<IEnumerable<ConfigurationDto>> GetNotEditableConfigurations();
+        Task UpdateMeterUtilityTypeDailyTarget(AddUpdateUtilityTypeDetailsCommandRequest request);
 
     }
 }

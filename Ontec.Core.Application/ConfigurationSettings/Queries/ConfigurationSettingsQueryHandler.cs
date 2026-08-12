@@ -5,6 +5,7 @@ using Ontec.Core.Application.Common.Exceptions;
 using Ontec.Core.Domain.Extension;
 using Ontec.Core.Domain.Interface.Common;
 using Ontec.Core.Domain.Interface.Configuration;
+using Ontec.Core.Domain.Interface.Meter;
 using Ontec.Core.Domain.Models.Dto.Configuration;
 using Ontec.Core.Domain.Requests.Configuration.Queries;
 using Ontec.Core.Domain.Requests.ConfigurationSettings.Queries;
@@ -18,15 +19,18 @@ namespace Ontec.Core.Application.ConfigurationSettings.Queries
         private readonly IWorkContext _workContext;
         private IHostingEnvironment Environment;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IMeterRepository _meterRepository;
         public ConfigurationSettingsQueryHandler(IConfigurationRepository configurationRepo
                                         , IWorkContext workContext
                                          , IHostingEnvironment _environment
-                                   , IHttpContextAccessor httpContextAccessor)
+                                   , IHttpContextAccessor httpContextAccessor
+                                    , IMeterRepository meterRepository)
         {
             _configurationRepo = configurationRepo;
             _workContext = workContext;
             Environment = _environment;
             _httpContextAccessor = httpContextAccessor;
+            _meterRepository = meterRepository;
         }
 
         public async Task<Configurations> Handle(GetConfigurationQuery request, CancellationToken cancellationToken)
@@ -57,8 +61,9 @@ namespace Ontec.Core.Application.ConfigurationSettings.Queries
             {
                 dto.configurations = configurations;
             }
-            
-                dto.businessHoursConfigurations = await _configurationRepo.GetBusinessHoursConfigurations().ConfigureAwait(false);
+            var meterTypes = await _meterRepository.GetMeterType().ConfigureAwait(false);
+            dto.MeterUtilityTypes = meterTypes.ToList();
+            dto.businessHoursConfigurations = await _configurationRepo.GetBusinessHoursConfigurations().ConfigureAwait(false);
 
 
             return dto;
