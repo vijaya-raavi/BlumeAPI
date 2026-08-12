@@ -7,6 +7,7 @@ namespace Ontec.Core.Domain.Requests.Property.Command
     {
         public int Id { get; set; }
         public string Name { get; set; }
+        public int? EstateId { get; set; }
         public string UnitNumber { get; set; }
         public int OwnerId { get; set; }
         public int CompanyId { get; set; }

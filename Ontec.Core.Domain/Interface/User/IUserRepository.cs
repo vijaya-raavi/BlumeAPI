@@ -110,5 +110,17 @@ namespace Ontec.Core.Domain.Interface.User
         Task<UserBiometric> GetUserBiometricByDeviceIdUserId(string deviceId, int userId);
         Task<LoginResult> IsBiometricUserExist(GetUserByEmailQuery model);
         Task DeleteUserPermanentById(int userId);
+
+        Task<int> BulkInsertUsers(IEnumerable<BulkUsers> users);
+        Task<bool> IsBulkUserEmailExist(string email, int companyId);
+        Task<bool> IsBulkUserMobileExist(string email, int companyId);
+        Task<int> UpdateBulkRegisterUser(RegisterUserCommand request, int userId);
+        Task<int> GetBulkUserId(string email, string mobile, int companyId);
+        Task<bool> GetUserRegisteredStatus(string emailMobile, int companyId);
+        Task<int> InsertUserDocument(int userId, BulkUserDocument doc);
+        Task<int> InsertUser(BulkUsers user, int docId);
+        Task InsertPropertiesParallel(int userId, List<PropertyRequestDto> properties, int companyId);
+        Task InsertMetersParallel(int propertyId, List<PropertyMeterRequestDto> meters, int companyId);
+
     }
 }
