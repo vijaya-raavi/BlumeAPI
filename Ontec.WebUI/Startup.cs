@@ -42,12 +42,12 @@ namespace Ontec.WebUI
 
         public void ConfigureServices(IServiceCollection services)
         {
-            //var cultureInfo = new CultureInfo("en-US");
+            var cultureInfo = new CultureInfo("en-US");
 
             //var cultureInfo = new CultureInfo("en-ZA");
 
-            //CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
-            //CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+            CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+            CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
 
             //CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
             //CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
@@ -177,14 +177,28 @@ namespace Ontec.WebUI
             }
 
             app.UseSwagger();
+            //app.UseSwaggerUI(c =>
+            //{
+            //    foreach (var description in provider.ApiVersionDescriptions)
+            //    {
+            //        c.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
+            //    }
+            //    c.OAuthUseBasicAuthenticationWithAccessCodeGrant();
+            //});
+
             app.UseSwaggerUI(c =>
             {
-                foreach (var description in provider.ApiVersionDescriptions)
-                {
-                    c.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
-                }
+                //foreach (var description in provider.ApiVersionDescriptions)
+                //{
+                //c.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "V1 Docs");
+                //}
                 c.OAuthUseBasicAuthenticationWithAccessCodeGrant();
+                c.DefaultModelsExpandDepth(-1); // Hide models
+                c.DefaultModelExpandDepth(1);
+                c.SwaggerEndpoint("/swagger/v2/swagger.json", "V2 Docs");
             });
+
 
             app.UseHttpsRedirection();
 
@@ -244,7 +258,7 @@ namespace Ontec.WebUI
                 using var connection = new NpgsqlConnection(AppSettings.DatabaseSetting.OntechDbConnectionString);
 
                 var connectionData = connection.Query<ConnectionData>(
-                    "SELECT connection_id AS ConnectionId, user_id AS UserId, client_type AS ClientType FROM user_notification_connections"
+                    "SELECT connection_id AS ConnectionId, user_id AS UserId, client_type AS ClientType FROM public.user_notification_connections"
                 ).ToList();
 
                 liveUserService.InitializeConnections(connectionData);
