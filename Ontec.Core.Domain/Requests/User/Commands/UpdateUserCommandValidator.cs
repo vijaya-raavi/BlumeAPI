@@ -70,39 +70,69 @@ namespace Ontec.Core.Domain.Requests.User.Commands
                 }
                 if (model.ProofDocumentTypeId == (int)DocumentTypeEnum.SouthAfricanID)
                 {
+                    bool isLuhnDigit = false;
 
                     if (!string.IsNullOrEmpty(model.DocumentNumber))
                     {
                         string doc = model.DocumentNumber;
                         string mmdd = doc.Substring(2, 4); // Extract MMDD
-
-                        if (model.TitleId == (int)Title.Mrs || model.TitleId == (int)Title.Ms)
+                        if (doc.Length == 13)
                         {
-                            if (!DateTime.TryParseExact(mmdd, "MMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+                            int sum = 0;
+                            bool doubleDigit = false;
+
+                            // Process right to left
+                            for (int i = doc.Length - 1; i >= 0; i--)
                             {
-                                context.AddFailure(nameof(UpdateUserCommand.DocumentNumber), string.Format(CommonConstants.InValid, nameof(UpdateUserCommand.DocumentNumber).SplitPascalCase()));
+                                int digit = doc[i] - '0';
+                                if (doubleDigit)
+                                {
+                                    digit *= 2;
+                                    if (digit > 9) digit -= 9;
+                                }
+                                sum += digit;
+                                doubleDigit = !doubleDigit;
                             }
-                            if (!Regex.IsMatch(model.DocumentNumber, "^[0-9]{2}[0-9]{2}[0-9]{2}[0-4][0-9]{3}[0-1]{1}[8]{1}[0-9]{1}$"))
+
+                            if (sum % 10 == 0)
                             {
-
-
-                                context.AddFailure(nameof(UpdateUserCommand.DocumentNumber), string.Format(CommonConstants.InValid, nameof(UpdateUserCommand.DocumentNumber).SplitPascalCase()));
-
+                                isLuhnDigit = true;
                             }
                         }
-                        if (model.TitleId == (int)Title.Mr)
+                        if (!isLuhnDigit)
                         {
-
-
-                            if (!DateTime.TryParseExact(mmdd, "MMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+                            context.AddFailure(nameof(UpdateUserCommand.DocumentNumber), string.Format(CommonConstants.InValid, nameof(UpdateUserCommand.DocumentNumber).SplitPascalCase()));
+                        }
+                        else
+                        {
+                            if (model.TitleId == (int)Title.Mrs || model.TitleId == (int)Title.Ms)
                             {
-                                context.AddFailure(nameof(UpdateUserCommand.DocumentNumber), string.Format(CommonConstants.InValid, nameof(UpdateUserCommand.DocumentNumber).SplitPascalCase()));
+                                if (!DateTime.TryParseExact(mmdd, "MMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+                                {
+                                    context.AddFailure(nameof(UpdateUserCommand.DocumentNumber), string.Format(CommonConstants.SAID, nameof(UpdateUserCommand.DocumentNumber).SplitPascalCase()));
+                                }
+                                if (!Regex.IsMatch(model.DocumentNumber, "^[0-9]{2}[0-9]{2}[0-9]{2}[0-4][0-9]{3}[0-1]{1}[8]{1}[0-9]{1}$"))
+                                //{
+                                //if (!Regex.IsMatch(model.DocumentNumber, "^[0-9]{2}(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])[0-4][0-9]{3}[0-1][8][0-9]$"))
+                                {
+                                    context.AddFailure(nameof(UpdateUserCommand.DocumentNumber), string.Format(CommonConstants.SAID, nameof(UpdateUserCommand.DocumentNumber).SplitPascalCase()));
+                                }
                             }
-                            if (!Regex.IsMatch(model.DocumentNumber, "^[0-9]{2}[0-9]{2}[0-9]{2}[5-9][0-9]{3}[0-1]{1}[8]{1}[0-9]{1}$"))
+                            if (model.TitleId == (int)Title.Mr)
                             {
 
-                                context.AddFailure(nameof(UpdateUserCommand.DocumentNumber), string.Format(CommonConstants.InValid, nameof(UpdateUserCommand.DocumentNumber).SplitPascalCase()));
+                                if (!DateTime.TryParseExact(mmdd, "MMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+                                {
+                                    context.AddFailure(nameof(UpdateUserCommand.DocumentNumber), string.Format(CommonConstants.SAID, nameof(UpdateUserCommand.DocumentNumber).SplitPascalCase()));
+                                }
+                                if (!Regex.IsMatch(model.DocumentNumber, "^[0-9]{2}[0-9]{2}[0-9]{2}[5-9][0-9]{3}[0-1]{1}[8]{1}[0-9]{1}$"))
+                                //{
+                                //if (!Regex.IsMatch(model.DocumentNumber, "^[0-9]{2}(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])[5-9][0-9]{3}[0-1][8][0-9]$"))
+                                {
 
+                                    context.AddFailure(nameof(UpdateUserCommand.DocumentNumber), string.Format(CommonConstants.SAID, nameof(UpdateUserCommand.DocumentNumber).SplitPascalCase()));
+
+                                }
                             }
                         }
                     }
