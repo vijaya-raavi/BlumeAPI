@@ -73,5 +73,22 @@ namespace Ontec.WebUI.V2.Controllers
             return Ok(await Mediator.Send(request).ConfigureAwait(false));
         }
         #endregion
+
+
+        [MapToApiVersion("2.0")]
+        [HttpPost("active-property/{id}/{checkValidation}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PropertyActiveDto))]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> ActivePropertyById([FromRoute] int id, bool checkValidation)
+        {
+            var request = new ActivePropertyCommandRequest()
+            {
+                Id = id,
+                CheckValidation = checkValidation
+            };
+            return Ok(await Mediator.Send(request).ConfigureAwait(false));
+        }
     }
 }
