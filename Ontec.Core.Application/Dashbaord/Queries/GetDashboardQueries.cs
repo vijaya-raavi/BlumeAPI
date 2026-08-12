@@ -451,6 +451,7 @@ namespace Ontec.Core.Application.Dashbaord.Queries
                         }
                         MeterType type = meterResult.Data[0].Meter.Type;
                         meter.MasterMeterType = type.Name;
+                        await _meterRepository.UpdateMeterMasterType(meter.MeterId, type.Name).ConfigureAwait(false);
                         //if (type != null && type.Id == "STS" && type.Name == "STS Meter")
                         //{
                         //    stsData = await GetSTSTransactionsData(request.PropertyId).ConfigureAwait(false);

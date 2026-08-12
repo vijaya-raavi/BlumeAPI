@@ -984,6 +984,18 @@ namespace Ontec.Infrastructure.Persistence.Repositories.MeterRepository
             var unit = await _genericRepository.ExecuteScalarAsync<string>(sQuery, parameters).ConfigureAwait(false);
             return unit;
         }
+        public async Task<int> UpdateMeterMasterType(int id, string masterMeterType)
+        {
+            var sQuery = @"UPDATE  ohd_meter  as m
+                           SET meter_master_type=@MasterMeterType
+                            where id=@Id";
+            var parameters = new DynamicParameters();
+            parameters.Add("@Id", id);
+            parameters.Add("@MasterMeterType", masterMeterType);
+
+            var result = await _genericRepository.ExecuteScalarAsync<int>(sQuery, parameters).ConfigureAwait(false);
+            return result;
+        }
     }
 }
 

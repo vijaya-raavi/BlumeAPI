@@ -63,5 +63,6 @@ namespace Ontec.Core.Domain.Interface.Meter
         Task<int> GetMeterIdByEFTNumber(string eftNumber);
         Task<int> UpdateEFTNumberByMeterId(int meterId, string eftNo);
         Task<string> GetUnitOfMeasure(string meter);
+        Task<int> UpdateMeterMasterType(int id, string masterMeterType);
     }
 }
