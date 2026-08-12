@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Ontec.Core.Domain.Models.Dto;
+using Ontec.Core.Domain.Models.Dto.BulkUpload;
 using Ontec.Core.Domain.Models.Dto.Common;
 using Ontec.Core.Domain.Models.Dto.User;
+using Ontec.Core.Domain.Requests.BulkUpload.Command;
+using Ontec.Core.Domain.Requests.BulkUpload.Queries;
 using Ontec.Core.Domain.Requests.Login.Queries;
 using Ontec.Core.Domain.Requests.User.Commands;
 using Ontec.Core.Domain.Requests.User.Queries;
@@ -171,5 +174,30 @@ namespace Ontec.WebUI.V2.Controllers
         }
         #endregion
 
+        [MapToApiVersion("2.0")]
+        [HttpPost("bulk-upload")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AddUpdateResultDto))]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> BulkUploadUsers([FromBody] BulkUploadRequestCommand request)
+        {
+
+            return Ok(await Mediator.Send(request).ConfigureAwait(false));
+        }
+        [MapToApiVersion("2.0")]
+        [HttpGet("get_status/{batchId}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BulkUploadBatchDto))]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetBatchStatus(Guid batchId)
+        {
+            var request = new GetBulkUploadBatchStatusQuery
+            {
+                BathcId = batchId
+            };
+            return Ok(await Mediator.Send(request).ConfigureAwait(false));
+        }
     }
 }

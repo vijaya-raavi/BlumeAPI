@@ -15,5 +15,6 @@ namespace Ontec.Core.Domain.Interface.Document
         Task<string> SaveLogo(UploadDocumentDto request);
 
         Task<int> AddApplicationLogger(ApplicationLogger request);
+        Task<string> SaveCreditImages(UploadDocumentDto request);
     }
 }

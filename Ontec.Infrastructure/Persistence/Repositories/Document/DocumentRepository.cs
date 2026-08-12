@@ -6,6 +6,9 @@ using Ontec.Core.Domain.Interface;
 using Ontec.Core.Domain.Interface.Document;
 using Ontec.Core.Domain.Models.Dto.Common;
 using Ontec.Core.Domain.Models.Dto.Document;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Processing;
 
 namespace Ontec.Infrastructure.Persistence.Repositories.Document
 {
@@ -273,6 +276,61 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Document
             catch(Exception ex) {
                 return 0;
             }
+        }
+        public async Task<string> SaveCreditImages(UploadDocumentDto request)
+        {
+            string wwwPath = this.Environment.WebRootPath;
+            var requestPath = _httpContextAccessor.HttpContext.Request;
+            var domain = $"{requestPath.Scheme}://{requestPath.Host}";
+            var absoluteUrl = "/uploads/creditimages/";
+            string path = Path.Combine(this.Environment.WebRootPath, "uploads/creditimages");
+
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+
+            string fileName = request.FileName;
+            string extension = Path.GetExtension(request.UploadFile.FileName.Trim()).ToLower();
+            path = Path.Combine(path, fileName);
+
+            if (File.Exists(path))
+                File.Delete(path);
+
+            // ✅ Compress before saving
+            using (var inputStream = new MemoryStream())
+            {
+                await request.UploadFile.CopyToAsync(inputStream);
+                byte[] originalBytes = inputStream.ToArray();
+
+                byte[] finalBytes = IsImageFile(extension)
+                    ? await CompressImageAsync(originalBytes)  // compress images
+                    : originalBytes;                           // keep other files as-is
+
+                await File.WriteAllBytesAsync(path, finalBytes);
+            }
+
+            absoluteUrl += fileName;
+            return absoluteUrl;
+        }
+        private bool IsImageFile(string extension) =>
+         new[] { ".jpg", ".jpeg", ".png", ".bmp", ".webp", ".heic", ".heif" }.Contains(extension);
+
+        private Task<byte[]> CompressImageAsync(byte[] imageBytes, int quality = 40)
+        {
+            if (imageBytes.Length < 500 * 1024)
+                return Task.FromResult(imageBytes); // skip if already small
+
+            return Task.Run(() =>
+            {
+                using var inputStream = new MemoryStream(imageBytes);
+                using var image = SixLabors.ImageSharp.Image.Load(inputStream);
+                using var outputStream = new MemoryStream();
+
+                if (image.Width > 1024)
+                    image.Mutate(x => x.Resize(1024, 0));
+
+                image.SaveAsJpeg(outputStream, new JpegEncoder { Quality = quality });
+                return outputStream.ToArray();
+            });
         }
     }
 }
