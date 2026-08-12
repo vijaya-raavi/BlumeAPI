@@ -500,7 +500,8 @@ namespace Ontec.Infrastructure.Persistence.Repositories.MeterRepository
 
         public async Task<MeterConsumptionUnitDto> GetTargetConsumptionByMeterNumber(string meterNumber)
         {
-            var sQuery = @"Select mr.daily_target_consumption as DailyTargetConsumption 
+            var sQuery = @"Select mr.id AS MeterId
+                                ,mr.daily_target_consumption as DailyTargetConsumption 
                             , mrt.unitofmeasure
                             , mrt.meterreadingtypeId as MeterReadingType
                            FROM public.ohd_meter as mr
