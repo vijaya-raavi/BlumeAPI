@@ -22,7 +22,7 @@ namespace Ontec.Core.Domain.Models.Dto.MasteUserAccount
         public decimal Balance { get; set; }
         public decimal? PrincipleAmount { get; set; }
         public int AccountPriority { get; set; }
-        public string AuxChargeScheduleId { get; set; }
+        public int AuxChargeScheduleId { get; set; }
         public string RecordStatus { get; set; }
         public DateTime? SuspendUntil { get; set; }
         public DateTime StartDate { get; set; }

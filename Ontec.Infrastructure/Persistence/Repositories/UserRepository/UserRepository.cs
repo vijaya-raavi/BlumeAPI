@@ -271,7 +271,8 @@ namespace Ontec.Infrastructure.Persistence.Repositories.UserRepository
                                 , u.role_id as RoleId  
 								,to_char(u.created_at,'dd-MM-yyyy') As AddedOn
                                 ,u.last_login_date As LastLoginDate
-                                ,u.isbusiness As IsBusiness                           
+                                ,u.isbusiness As IsBusiness
+                                ,u.is_bulk_user AS IsBulkUser 
                           FROM ohd_user as u
                           JOIN ohd_user_role_master as ur on u.role_id =ur.id
                           WHERE u.id=@userId";
@@ -381,6 +382,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.UserRepository
                             ,ur.first_name as firstname
                             ,ur.last_name as lastname
                             ,ur.Email as EmailId
+                            ,ur.company_id AS CompanyId
                             ,r.Name as Role
                              --,ur.lockoutenabled
                              -- ,ur.accessfailedcount  
@@ -392,11 +394,16 @@ namespace Ontec.Infrastructure.Persistence.Repositories.UserRepository
 						   ,ur.comments As Comments 
                             ,ur.isbusiness AS IsBusiness
                             ,ur.accepted_terms_conditions_version AS AcceptedTermConditionVersion
-                            ,ur.is_forced_password AS IsForcedPasswordChange
                             --,config.value as IsEstateEnable
+                             ,is_self_registered AS IsSelfRegistered
+                            ,is_bulk_user AS IsBulkUser
+                           ,ur.is_forced_password AS IsForcedPasswordChange
+                            ,ur.mobile_country_code AS CountryId
+                            ,c.country_code AS CountryCode
                            FROM ohd_user as Ur
-                           Join public.ohd_user_role_master as r on Ur.role_id = r.Id
-                           JOIN public.ohd_enum_status as es ON ur.status_id=es.id
+                           LEFT Join public.ohd_user_role_master as r on Ur.role_id = r.Id
+                           LEFT JOIN public.ohd_enum_status as es ON ur.status_id=es.id
+                           LEFT JOIN public.ohd_country as c ON ur.mobile_country_code= c.id
                              --JOIN public.ohd_configuration AS config ON ur.company_id=config.company_id
                           WHERE (lower(ur.email)=@email or ur.mobile=@email) and ur.password=@password  and ur.company_id=@companyId and Ur.status_id!=@Inactive";
             //--AND config.name='isestateenable' ";

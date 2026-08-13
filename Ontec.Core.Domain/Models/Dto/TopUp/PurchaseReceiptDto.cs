@@ -61,6 +61,7 @@ namespace Ontec.Core.Domain.Models.Dto.TopUp
         public string RctNo { get; set; }
         public string RCTNo { get; set; }
         public bool IsInHouseTxn { get; set; }
+        public double Discount { get; set; }
     }
     public class ReceiptViewModel
     {
@@ -129,6 +130,8 @@ namespace Ontec.Core.Domain.Models.Dto.TopUp
         public bool ShowTarrifToken {  get; set; }
         public bool ShowTaxDetails { get; set; }
         public string Tariff { get; set; }
+        public double Discount { get; set; }
+        public bool ShowDiscount { get; set; }
         public List<DebtItem> DebtItems { get; set; } 
         public List<FixedItem> FixedItems { get; set; } 
         
@@ -136,16 +139,21 @@ namespace Ontec.Core.Domain.Models.Dto.TopUp
     }
     public class DebtItem
     {
-        public string Text {  get; set; }
+        public string Text { get; set; }
+        public string strAmount { get; set; }
         public decimal Amount { get; set; }
         public decimal Tax { get; set; }
+        public string strTax { get; set; }
+        public string RemainingBalance { get; set; }
         public decimal RemainBalance { get; set; }
     }
-  
+
     public class FixedItem
     {
+        public string strAmount { get; set; }
         public decimal Amount { get; set; }
         public decimal Tax { get; set; }
+        public string strTax { get; set; }
         public string Text { get; set; }
     }
 }

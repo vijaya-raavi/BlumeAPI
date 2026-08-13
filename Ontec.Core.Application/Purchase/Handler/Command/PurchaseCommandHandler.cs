@@ -150,7 +150,8 @@ namespace Ontec.Core.Application.Purchase.Handler.Command
 
                 case 3://custom
                     startDate = request.FromDate;
-                    endDate = request.ToDate.Date.AddDays(1);
+                    //endDate = request.ToDate.Date.AddDays(1);
+                    endDate = request.ToDate.Date;
                     break;
 
                 default:

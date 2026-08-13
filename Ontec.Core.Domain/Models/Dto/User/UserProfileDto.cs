@@ -51,5 +51,6 @@ namespace Ontec.Core.Domain.Models.Dto.User
 
         public string Auxaccountdetails { get; set; }
         public bool IsForcedPasswordChange {  get; set; }
+        public bool IsBulkUser { get; set; }
     }
 }
