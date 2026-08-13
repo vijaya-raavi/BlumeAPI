@@ -43,7 +43,7 @@ namespace Ontec.Core.Domain.Common.Helper
                 return false;
             try
             {
-                return Regex.IsMatch(mobile, "^[0-9]*$");
+                return Regex.IsMatch(mobile, "^[0-9]{7,14}$");
             }
             catch (Exception)
             {
