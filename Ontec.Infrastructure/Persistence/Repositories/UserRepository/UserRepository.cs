@@ -1,34 +1,60 @@
-﻿using System.Data;
-using Dapper;
+﻿using Dapper;
+using Ontec.Core.Domain.Common;
 using Ontec.Core.Domain.Common.Helper;
 using Ontec.Core.Domain.Enums;
 using Ontec.Core.Domain.Interface;
 using Ontec.Core.Domain.Interface.Common;
 using Ontec.Core.Domain.Interface.Communication;
+using Ontec.Core.Domain.Interface.Configuration;
+using Ontec.Core.Domain.Interface.Document;
+using Ontec.Core.Domain.Interface.MasterApiService;
+using Ontec.Core.Domain.Interface.Meter;
+using Ontec.Core.Domain.Interface.Property;
 using Ontec.Core.Domain.Interface.User;
 using Ontec.Core.Domain.Models;
 using Ontec.Core.Domain.Models.Dto;
 using Ontec.Core.Domain.Models.Dto.Biometric;
+using Ontec.Core.Domain.Models.Dto.Consumption;
+using Ontec.Core.Domain.Models.Dto.Document;
 using Ontec.Core.Domain.Models.Dto.Login;
 using Ontec.Core.Domain.Models.Dto.Meter;
 using Ontec.Core.Domain.Models.Dto.User;
 using Ontec.Core.Domain.Requests.BiometricVerification.Command;
 using Ontec.Core.Domain.Requests.Login.Command;
 using Ontec.Core.Domain.Requests.Login.Queries;
+using Ontec.Core.Domain.Requests.Meter.Command;
 using Ontec.Core.Domain.Requests.Operator.Command;
 using Ontec.Core.Domain.Requests.Operator.Queries;
+using Ontec.Core.Domain.Requests.Property.Command;
 using Ontec.Core.Domain.Requests.User.Commands;
 using Ontec.Core.Domain.Requests.User.Queries;
+using Ontec.Infrastructure.Persistence.Repositories.Document;
+using System.Data;
 
 namespace Ontec.Infrastructure.Persistence.Repositories.UserRepository
 {
     public class UserRepository(IGenericRepository genericRepository
-                                , ICommunicationRepository communicationRepository, ICompanyHelper companyHelper, IWorkContext workContext) : IUserRepository
+                                , ICommunicationRepository communicationRepository,
+                                ICompanyHelper companyHelper,
+                                IWorkContext workContext, IEncryptionandDecryption encryptionandDecryption,
+                                IMasterApiConnectService masterApiConnectService,
+                                IPropertyRepository propertyRepository,
+                                IDocumentRepository documentRepository,
+                                IMeterRepository meterRepository,
+                            MasterApiSetting masterApiSetting,
+                            IConfigurationRepository configurationRepository) : IUserRepository
     {
         private readonly IGenericRepository _genericRepository = genericRepository;
         private readonly ICommunicationRepository _communicationRepository = communicationRepository;
         private readonly ICompanyHelper _companyHelper = companyHelper;
         private readonly IWorkContext _workContext = workContext;
+        private readonly IEncryptionandDecryption _encryptionandDecryption = encryptionandDecryption;
+        private readonly IMasterApiConnectService _masterApiConnectService = masterApiConnectService;
+        private readonly MasterApiSetting _masterApiSetting = masterApiSetting;
+        private readonly IDocumentRepository _documentRepository = documentRepository;
+        private readonly IPropertyRepository _propertyRepository = propertyRepository;
+        private readonly IMeterRepository _meterRepository = meterRepository;
+        private readonly IConfigurationRepository _configurationRepository = configurationRepository;
 
         public async Task<int> RegisterUser(RegisterUserCommand request)
         {
@@ -1999,6 +2025,420 @@ namespace Ontec.Infrastructure.Persistence.Repositories.UserRepository
                 await _genericRepository.ExecuteScalarAsync(sQuery, parameters);
             }
             catch (Exception ex) { }
+        }
+        public async Task<int> InsertUser(BulkUsers user, int docId)
+        {
+            try
+            {
+                string userQuery = @"
+                        INSERT INTO public.ohd_user
+                        (
+                            title, first_name, last_name, mobile, role_id,
+                            email, password, company_id, address_line_1,proof_document_id,
+                            tax_number, terms_accepted, accepted_terms_conditions_version,
+                            status_id, mobile_country_code,is_bulk_user,is_self_registered
+                        )
+                        VALUES
+                        (
+                            @TitleId, @FirstName, @LastName, @Mobile, @RoleId,
+                            @Email, @Password, @CompanyId, @AddressLine1,@DocumentId,
+                            @TaxNumber, @TermsAccepted, @TermConditionsVersion,
+                            @StatusId, @CountryCode,@IsBulkUser,@IsSelfRegistered
+                        )
+                        RETURNING lastval();";
+
+                var parameters = new DynamicParameters();
+                parameters.Add("@TitleId", user.Title);
+                parameters.Add("@FirstName", user.FirstName);
+                parameters.Add("@LastName", user.LastName);
+                parameters.Add("@Mobile", user.Mobile);
+                parameters.Add("@RoleId", user.RoleId);
+                parameters.Add("@DocumentId", docId);
+                parameters.Add("@Email", user.Email);
+                parameters.Add("@CompanyId", user.CompanyId);
+                parameters.Add("@AddressLine1", user.AddressLine1);
+                parameters.Add("@AddressLine1", user.AddressLine1);
+                parameters.Add("@TaxNumber", user.TaxNumber);
+                parameters.Add("@TermsAccepted", user.TermsAccepted);
+                parameters.Add("@TermConditionsVersion", user.TermConditionsVersion);
+                parameters.Add("@Password", _encryptionandDecryption.Encrypt("Admin@123"));
+                parameters.Add("@StatusId", (int)StatusEnum.Active);
+                parameters.Add("@CountryCode", user.CountryCodeId);
+                parameters.Add("@IsBulkUser", true);
+                parameters.Add("@IsSelfRegistered", false);
+
+                // ── Use existing 2-param overload ✅ ─────────────────────────────
+                return await _genericRepository.ExecuteScalarAsync<int>(userQuery, parameters).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                return 0;
+            }
+        }
+        public async Task<int> InsertUserDocument(int userId, BulkUserDocument doc)
+        {
+            var date = DateTime.UtcNow.ToString("yyyyMMdd");
+            var docTypes = await documentRepository.GetDocumentTypeMasters().ConfigureAwait(false);
+            var docTypesName = docTypes.Select(s => s.Name).ToList();
+
+
+            int docTypesId = docTypes.ToList().Where(s => s.Name.Equals(doc.DocumentType)).Select(t => t.Id).FirstOrDefault();
+
+            var uploadDocDto = new UploadDocumentDto
+            {
+                UploadFile = doc.FileDoc,
+                DocumentTypeId = docTypesId,
+                FileName = userId + "_" + date + "_consumer_identity" + Path.GetExtension(doc.FileDoc.FileName),
+                Id = 0,
+                Title = doc.FileDoc.FileName,
+                DocumentNumber = doc.DocNumber,
+
+            };
+
+            return await _documentRepository.UploadDocument(uploadDocDto).ConfigureAwait(false);
+        }
+
+        public async Task<int> BulkInsertUsers(IEnumerable<BulkUsers> users)
+        {
+            int totalInserted = 0;
+            IDbTransaction transaction = null;
+            int userId = 0;
+            try
+            {
+                transaction = _genericRepository.TransactionOpen();
+
+                // ✅ Sequential loop — safe with single DB transaction
+                foreach (var user in users)
+                {
+                    try
+                    {
+                        // ── 1. Insert User ──────────────────────────────────
+                        //var userId = await InsertUser(user);
+
+                        var tasks = new List<Task>();
+                        int? docId = 0;
+                        if (user.UserDocument != null && user.UserDocument.FileDoc != null)
+                            docId = await InsertUserDocument(0, user.UserDocument); // userId = 0 placeholder for filename
+
+                        // ── 2. Insert User with docId ──────────────────────────
+                        userId = await InsertUser(user, docId.Value);
+                        // ── 2. Insert User Document ─────────────────────────
+                        if (user.UserDocument != null && user.UserDocument.FileDoc != null)
+                            tasks.Add(InsertUserDocument(userId, user.UserDocument));
+
+                        // ── 3. Insert Communication Types ───────────────────
+                        if (user.CommunicationTypesIds?.Any() == true)
+                            tasks.Add(_communicationRepository.InsertUserCommunications(
+                                user.CommunicationTypesIds, userId));
+
+                        // ── 4. Insert Properties → Meters ───────────────────
+                        if (user.UserProperties?.Any() == true && user.UserProperties.Count() > 0)
+                            tasks.Add(InsertPropertiesParallel(userId, user.UserProperties, user.CompanyId));
+
+                        await Task.WhenAll(tasks);
+
+                        totalInserted++; // ✅ Simple increment, no threading issue
+                    }
+                    catch (Exception ex)
+                    {
+                        // ✅ Log individual user failure without stopping all
+                        // _logger.LogError(ex, $"Failed to insert user: {user.Email}");
+                        throw; // or continue; based on your requirement
+                    }
+                }
+
+                transaction.Commit();
+                return userId;
+            }
+            catch (Exception ex)
+            {
+                transaction?.Rollback();
+                throw;
+            }
+            finally
+            {
+                _genericRepository.TransactionClose();
+            }
+        }
+
+        public async Task InsertPropertiesParallel(int userId, List<PropertyRequestDto> properties, int companyId)
+        {
+            var propertyTasks = properties.Select(async property =>
+            {
+                // Map PropertyRequestDto → AddOrUpdatePropertyQuery
+                var addPropertyRequest = new AddOrUpdatePropertyQuery
+                {
+                    Name = property.PropertyName,
+                    UnitNumber = property.UnitNumber,
+                    EstateId = property.EstateId,
+                    AddressLine1 = property.AddressLine1,
+                    OwnerId = userId,
+                    CompanyId = companyId,
+                    StatusId = (int)StatusEnum.Active
+                };
+
+                // Reuse existing AddProperty function ✅
+                var propertyId = await _propertyRepository.AddProperty(addPropertyRequest).ConfigureAwait(false);
+
+                // Insert Meters linked to this property
+                if (property.Meters?.Any() == true && property.Meters.Count() > 0)
+                    await InsertMetersParallel(propertyId, property.Meters, companyId);
+            });
+
+            await Task.WhenAll(propertyTasks);
+        }
+
+        public async Task InsertMetersParallel(int propertyId, List<PropertyMeterRequestDto> meters, int companyId)
+        {
+            bool isSolar = false;
+            var meterTasks = meters.Select(async meter =>
+            {
+                // ── 1. Upload Contract Document first (if exists) ───────────
+                int contractDocumentId = 0;
+                if (meter.ContractDocumentUrl != null)
+                {
+                    var date = DateTime.UtcNow.ToString("yyyyMMdd");
+                    var uploadDocDto = new UploadDocumentDto
+                    {
+                        UploadFile = meter.ContractDocumentUrl,
+                        DocumentTypeId = meter.MeterTypeId,
+                        FileName = propertyId + "_" + date + "_meter_contract"
+                                         + Path.GetExtension(meter.ContractDocumentUrl.FileName),
+                        Id = 0,
+                        Title = meter.ContractDocumentUrl.FileName,
+                        DocumentNumber = meter.MeterNumber
+                    };
+                    contractDocumentId = await _documentRepository.UploadDocument(uploadDocDto).ConfigureAwait(false);
+                }
+                var meterTypes = await _meterRepository.GetMeterType().ConfigureAwait(false);
+                var meterUrl = _masterApiSetting.BaseUrl + _masterApiSetting.MeterNumberApi + "?meter.meterNum=" + meter.MeterNumber + "&paging=(limit)(5)(offset)(0)";
+                var meterResult = await _masterApiConnectService.GetMeter(meterUrl).ConfigureAwait(false);
+                string utiltyType = "";
+                string utilityName = "";
+                utiltyType = meterResult.Data[0].Meter.Model.ServiceResource;
+                utilityName = meterResult.Data[0].Meter.Model.Name;
+
+                if (utilityName.Contains("SMART HOT_WATER"))
+                {
+                    utiltyType = "HOT WATER";
+                }
+                var utility = meterTypes.FirstOrDefault(t => t.name.ToUpper().Contains(utiltyType));
+
+                // ── 2. Map PropertyMeterRequestDto → AddUpdateMeterQuery ────
+                var addMeterRequest = new AddUpdateMeterQuery
+                {
+                    PropertyId = propertyId,
+                    MeterNumber = meter.MeterNumber,
+                    MeterTypeId = utility.id,
+                    MeterAlias = meter.Alias,
+                    DailyTargetConsumption = meter.TargetConsumption,
+                    ContractEndDate = meter.ContractEndDate,
+                    ContractProofDocumentId = contractDocumentId,
+                    StatusId = (int)StatusEnum.Active
+                };
+
+                if (meterResult != null && meterResult.Data.Count() > 0)
+                {
+                    var customerAgreementId = "";
+                    var mastercustomerAgreementId = "";
+                    customerAgreementId = await _propertyRepository.GetCustomerAgreementId(addMeterRequest.PropertyId).ConfigureAwait(false);
+                    var meterdata = meterResult.Data;
+                    MeterType type = meterResult.Data[0].Meter.Type;
+                    var idExternal = meterResult.Data[0].Meter.IdExternal;
+                    if (type != null && type.Id != "STS" && type.Name != "STS Meter" && !idExternal)
+                    {
+                        isSolar = true;
+                    }
+                }
+                // ── 3. Insert Meter ─────────────────────────────────────────
+                var meterId = await _meterRepository.AddMeter(
+                    request: addMeterRequest,
+                    meterMasterTypeId: meter.MeterTypeId,
+                    eftNo: string.Empty,
+                    isverified: true
+                ).ConfigureAwait(false);
+
+                if (meterResult != null && meterResult.Data.Count() > 0)
+                {
+                    var customerAgreementId = "";
+                    var mastercustomerAgreementId = "";
+                    customerAgreementId = await _propertyRepository.GetCustomerAgreementId(addMeterRequest.PropertyId).ConfigureAwait(false);
+                    var meterdata = meterResult.Data;
+                    MeterType type = meterResult.Data[0].Meter.Type;
+                    var idExternal = meterResult.Data[0].Meter.IdExternal;
+                    if (type != null && type.Id != "STS" && type.Name != "STS Meter" && !idExternal)
+                    {
+                        isSolar = true;
+                    }
+                    foreach (var item in meterdata)
+                    {
+                        if (item.CustomerAgreement != null)
+                        {
+                            if (item.CustomerAgreement.Id != "")
+                            {
+                                mastercustomerAgreementId = item.CustomerAgreement.Id.ToString();
+                                if ((customerAgreementId == null || customerAgreementId == "") && mastercustomerAgreementId != "")
+                                {
+                                    await _propertyRepository.UpdatePropertyCustomerAgreementId(addMeterRequest.PropertyId, mastercustomerAgreementId);
+
+                                }
+                            }
+                        }
+                    }
+
+                }
+
+
+                // ── 4. Generate EftNo after meter inserted ──────────────────
+                if (meterId > 0)
+                {
+                    var eftNo = await GenerateEFTNumber(meterId).ConfigureAwait(false);
+
+                    // ── 5. Update meter with generated EftNo ────────────────
+                    if (!string.IsNullOrWhiteSpace(eftNo))
+                    {
+                        await _meterRepository.UpdateEFTNumberByMeterId(meterId, eftNo).ConfigureAwait(false);
+                    }
+                }
+
+            });
+
+            await Task.WhenAll(meterTasks);
+        }
+        private async Task<string> GenerateEFTNumber(int meterId)
+        {
+
+            string strEFTNo = "";
+            string strPrecharacterEft = "";
+            int eftRandomDigitNumberLength = 0;
+            var configurations = await _configurationRepository.GetConfigurations().ConfigureAwait(false);
+            if (configurations != null && configurations.Any(t => t.Name.ToLower().Equals("eftprecharacters")))
+            {
+
+                var approvalConfig = configurations.FirstOrDefault(t => t.Name.ToLower().Equals("eftprecharacters"));
+                if (approvalConfig != null)
+                {
+                    strPrecharacterEft = approvalConfig.Value;
+                }
+                var eftRandomDigitNumber = configurations.FirstOrDefault(t => t.Name.Equals("eftReferenceRandomDigitNumberLength"));
+                if (eftRandomDigitNumber != null)
+                {
+                    eftRandomDigitNumberLength = Convert.ToInt32(eftRandomDigitNumber.Value);
+                }
+            }
+
+            DateTime currentDate = DateTime.Now;
+            string monthNumber = currentDate.ToString("MM");
+            string yearNumber = currentDate.ToString("yyyy");
+
+            strEFTNo = strPrecharacterEft.ToLower() + "00" + meterId;
+            return strEFTNo;
+        }
+        public async Task<bool> IsBulkUserEmailExist(string email, int companyId)
+        {
+            try
+            {
+                var sQuery = @"SELECT is_bulk_user
+                            FROM public.ohd_user 
+                          WHERE (lower(email)=@email  OR mobile=@email) AND company_id=@companyId ";
+                var parameters = new DynamicParameters();
+                parameters.Add("@email", email.ToLower());
+                parameters.Add("@companyId", companyId);
+
+                var result = await _genericRepository.ExecuteScalarAsync<bool>(sQuery, parameters).ConfigureAwait(false);
+                return result;
+            }
+            catch (Exception ex) { return false; }
+        }
+        public async Task<bool> IsBulkUserMobileExist(string mobile, int companyId)
+        {
+            var sQuery = @"SELECT is_bulk_user
+                            FROM public.ohd_user  
+                          WHERE lower(mobile)=@mobile  AND company_id=@companyId ";
+
+            var parameters = new DynamicParameters();
+
+
+            parameters.Add("@mobile", mobile.ToLower());
+            parameters.Add("@companyId", companyId);
+
+            var result = await _genericRepository.ExecuteScalarAsync<bool>(sQuery, parameters).ConfigureAwait(false);
+            return result;
+        }
+
+        public async Task<int> UpdateBulkRegisterUser(RegisterUserCommand request, int userId)
+        {
+            try
+            {
+                var sQuery = @" UPDATE  public.ohd_user SET
+	                      mobile_country_code=@countryCodeId,
+                                company_id= @companyId,
+                                mobile =@mobile,
+                                email= @email,
+                                password=@password,
+                                role_id= @role , 
+                                status_id=@statusId,
+                                modified_at=@modified_at,
+                                isbusiness= @IsBusiness,
+                                isverified= @IsVerified,
+                                is_self_registered=@IsSelfRegistered
+                          WHERE id=@Id;  
+                          Select id from public.ohd_user
+                          where id=@Id";
+                var parameters = new DynamicParameters();
+                parameters.Add("@countryCodeId", request.CountryCodeId);
+                parameters.Add("@Id", userId);
+                parameters.Add("@companyId", request.CompanyId);
+                parameters.Add("@mobile", request.MobileNumber);
+                parameters.Add("@email", request.EmailId.ToLower());
+                parameters.Add("@password", request.Password);
+                parameters.Add("@role", (int)RoleMasterEnum.Customer);//as owner
+                parameters.Add("@statusId", (int)StatusEnum.InProcess); //pending
+                parameters.Add("@created_at", DateTime.UtcNow);
+                parameters.Add("@modified_at", DateTime.UtcNow);
+                parameters.Add("@IsBusiness", request.Isbusiness);
+                parameters.Add("@IsVerified", false);
+                parameters.Add("@IsSelfRegistered", true);
+
+                var result = await _genericRepository.ExecuteScalarAsync<int>(sQuery, parameters).ConfigureAwait(false);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return 0;
+            }
+        }
+
+        public async Task<int> GetBulkUserId(string email, string mobile, int companyId)
+        {
+            try
+            {
+                var sQuery = @"SELECT id
+                            FROM public.ohd_user 
+                          WHERE (lower(email)=@email  AND mobile=@mobile) AND company_id=@companyId AND is_bulk_user=@IsBulkUser";
+                var parameters = new DynamicParameters();
+                parameters.Add("@email", email.ToLower());
+                parameters.Add("@mobile", mobile.ToLower());
+                parameters.Add("@IsBulkUser", true);
+                parameters.Add("@companyId", companyId);
+
+                var result = await _genericRepository.ExecuteScalarAsync<int>(sQuery, parameters).ConfigureAwait(false);
+                return result;
+            }
+            catch (Exception ex) { return 0; }
+        }
+        public async Task<bool> GetUserRegisteredStatus(string emailMobile, int companyId)
+        {
+            var sQuery = @"SELECT is_self_registered FROM ohd_user  
+                          WHERE (lower(email)=@Email OR mobile=@Email) AND company_id=@CompanyId
+                            AND ( status_id=@Active OR status_id=@InProcess) ";
+            var parameters = new DynamicParameters();
+            parameters.Add("@Email", emailMobile.ToLower());
+            parameters.Add("@CompanyId", companyId);
+            parameters.Add("@Active", (int)StatusEnum.Active);
+            parameters.Add("@InProcess", (int)StatusEnum.InProcess);
+            var result = await _genericRepository.ExecuteScalarAsync<bool>(sQuery, parameters).ConfigureAwait(false);
+            return result;
         }
     }
     public class UserCommunications

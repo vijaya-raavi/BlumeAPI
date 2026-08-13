@@ -30,5 +30,6 @@
         public const string DeActivatedAccount = "Your account has been locked, please contact to admin.";
         public const string PermissionNotExist = "Permission not exists for this operator.";
         public const string BiometricNotRegistered = "{0} biometric is not registered.";
+        public const string SAID = "Invalid date in south african id.";
     }
 }

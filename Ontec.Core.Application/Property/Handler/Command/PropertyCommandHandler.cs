@@ -22,6 +22,7 @@ namespace Ontec.Core.Application.Property.Handler.Command
 {
     public class PropertyCommandHandler : IRequestHandler<AddOrUpdatePropertyQuery, AddUpdateResultDto>
                                           , IRequestHandler<DeletePropertyById, AddUpdateResultDto>
+                                        , IRequestHandler<ActivePropertyCommandRequest, PropertyActiveDto>
     {
         private readonly IPropertyRepository _propertyRepository;
         private readonly ICompanyRepository _companyRepository;

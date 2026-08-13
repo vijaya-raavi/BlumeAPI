@@ -185,7 +185,10 @@ namespace Ontec.Core.Domain.Enums
         Reason = 3,
         Operator = 4,
         TermConditionsVersion = 5,
-        GroupCategory = 6
+        GroupCategory = 6,
+        Property = 7,
+        TopUp = 8,
+
     }
     public enum PaymentMethodsEnum
     {

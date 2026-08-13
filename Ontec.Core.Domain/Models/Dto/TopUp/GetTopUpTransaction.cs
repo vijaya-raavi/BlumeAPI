@@ -7,6 +7,10 @@
         public int UserId { get; set; }
         public bool UseWallet { get; set; }
         public int MeterId { get; set; }
+        public int MeterTypeId { get; set; }
+        public string MasterMeterType { get; set; }
+        public string MeterType { get; set; }
+        public string UnitOfMeasure { get; set; }
         public string MeterNumber { get; set; }
         public string TransactionID { get; set; }
         public string TransactionFee { get; set; }

@@ -5,6 +5,7 @@ namespace Ontec.Core.Domain.Models.Dto.Dashboard
 {
     public class DashboardMeterDayConsumptionDto
     {
+        public int MeterId { get; set; }
         public string MeterType { get; set; }
         public string MasterMeterType { get; set; }
         public string MeterNumber { get; set; }
