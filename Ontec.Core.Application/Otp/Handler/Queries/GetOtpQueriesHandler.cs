@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using System.Diagnostics.Metrics;
+using MediatR;
 using Ontec.Core.Application.Common.Exceptions;
 using Ontec.Core.Application.Common.Helper;
 using Ontec.Core.Domain.Common.Helper;
@@ -13,7 +14,6 @@ using Ontec.Core.Domain.Models.Dto.User;
 using Ontec.Core.Domain.Requests.Login.Command;
 using Ontec.Core.Domain.Requests.Login.Queries;
 using Ontec.Core.Domain.Requests.User.Queries;
-using static System.Net.WebRequestMethods;
 
 namespace Ontec.Core.Application.Otp.Handler.Queries
 {
@@ -42,15 +42,16 @@ namespace Ontec.Core.Application.Otp.Handler.Queries
         }
         public async Task<OtpResponseModel> Handle(GetRegisterOtpQuery request, CancellationToken cancellationToken)
         {
-            var commonValidator = new GetRegisterOtpQueryValidator(_userRepository);
+            var commonValidator = new GetRegisterOtpQueryValidator(_userRepository, _companyRepository);
             var validatorResult = await commonValidator.ValidateAsync(request, cancellationToken);
             if (!validatorResult.IsValid)
                 throw new ValidationException(validatorResult.Errors);
 
             var res = new OtpResponseModel();
             Random generator = new Random();
-            //var r = "123456";
-             var r = ChecksumHelper.GenerateOTP();
+            var country = await _companyRepository.GetCountries().ConfigureAwait(false);
+            // var r = "123456";
+            var r = ChecksumHelper.GenerateOTP();
             var otpModel = new OtpModel
             {
                 CompanyId = request.CompanyId,
@@ -60,7 +61,8 @@ namespace Ontec.Core.Application.Otp.Handler.Queries
                 MobileNumber = request.MobileNumber,
                 Otp = r,
                 StatusId = (int)StatusEnum.NotVerified,
-                CountryCodeId = await _otpRepository.GetCountryCodeId(request.CountryCode, (int)StatusEnum.Active).ConfigureAwait(false)
+                // CountryCodeId = await _otpRepository.GetCountryCodeId(request.CountryCode, (int)StatusEnum.Active).ConfigureAwait(false)
+                CountryCodeId = country.Where(s => s.OtherText == request.CountryCode).Select(s => s.Id).FirstOrDefault(),
             };
 
             var existingOtp = await _otpRepository.GetOtpByMobileNumberCompanyId(request.MobileNumber, request.CompanyId, request.Email, (int)StatusEnum.NotVerified).ConfigureAwait(false);
@@ -73,7 +75,7 @@ namespace Ontec.Core.Application.Otp.Handler.Queries
             res.Otp = r;
 
             _workContext.SetCurrentOtp(res);
-            string body = " Your registration otp is : " + r;
+            string body = r;
             res.Otp = "";
 
             EmailModelClass obj = new()
@@ -96,7 +98,7 @@ namespace Ontec.Core.Application.Otp.Handler.Queries
                 request.MobileNumber = request.MobileNumber.TrimStart('0');
 
             }
-            res.MobileResponse = await _otpService.SendMobileOtp(r, body, request.CountryCode + request.MobileNumber).ConfigureAwait(false);
+            res.MobileResponse = await _otpService.SendMobileOtp(r, "Your registration otp is " + r, request.CountryCode + request.MobileNumber).ConfigureAwait(false);
 
             return res;
         }
@@ -111,7 +113,7 @@ namespace Ontec.Core.Application.Otp.Handler.Queries
             var res = new OtpResponseModel();
             Random generator = new Random();
 
-             var r = ChecksumHelper.GenerateOTP();
+            var r = ChecksumHelper.GenerateOTP();
             //var r = "123456";
             var getUserByEmailMobile = new GetUserByEmailComapnyId
             {
@@ -119,6 +121,7 @@ namespace Ontec.Core.Application.Otp.Handler.Queries
                 Email = request.EmailMobile
             };
             var getUser = await _userRepository.GetUserByEmailComapnyId(getUserByEmailMobile).ConfigureAwait(false);
+            var country = await _companyRepository.GetCountries().ConfigureAwait(false);
             if (getUser != null)
             {
                 var otpModel = new OtpModel
@@ -130,7 +133,8 @@ namespace Ontec.Core.Application.Otp.Handler.Queries
                     MobileNumber = getUser.Mobile,
                     Otp = r,
                     StatusId = (int)StatusEnum.NotVerified,
-                    CountryCodeId = await _otpRepository.GetCountryCodeId(request.CountryCode, (int)StatusEnum.Active).ConfigureAwait(false)
+                    // CountryCodeId = await _otpRepository.GetCountryCodeId(request.CountryCode, (int)StatusEnum.Active).ConfigureAwait(false)
+                    CountryCodeId = country.Where(s => s.OtherText == request.CountryCode).Select(s => s.Id).FirstOrDefault(),
                 };
                 var existingOtp = await _otpRepository.GetOtpByMobileNumberCompanyId(getUser.Mobile, request.CompanyId, getUser.Email, (int)StatusEnum.NotVerified).ConfigureAwait(false);
                 if (existingOtp != null)
@@ -140,6 +144,7 @@ namespace Ontec.Core.Application.Otp.Handler.Queries
                 _ = await _otpRepository.InsertOtp(otpModel).ConfigureAwait(false);
                 res.Type = "Forgot";
                 res.Otp = r;
+                string body = r;
                 _workContext.SetCurrentOtp(res);
 
                 res.Otp = "";
@@ -160,13 +165,14 @@ namespace Ontec.Core.Application.Otp.Handler.Queries
                 };
 
                 res.EmailResponse = await _otpService.SendEventMail(obj).ConfigureAwait(false);
-                string body = "Your OTP to reset password is : ";
+
+
                 if (getUser.Mobile.Length == 10)
                 {
                     getUser.Mobile = getUser.Mobile.TrimStart('0');
 
                 }
-                res.MobileResponse = await _otpService.SendMobileOtp(r, body + r, request.CountryCode + getUser.Mobile).ConfigureAwait(false);
+                res.MobileResponse = await _otpService.SendMobileOtp(r, "Your OTP to reset password is " + r, request.CountryCode + getUser.Mobile).ConfigureAwait(false);
 
             }
             else
@@ -195,11 +201,12 @@ namespace Ontec.Core.Application.Otp.Handler.Queries
             Random generator = new Random();
             //var r = "123456";
             var getUser = new UserProfileDto();
-              var r = ChecksumHelper.GenerateOTP();
+            var r = ChecksumHelper.GenerateOTP();
             var mobile = "";
             var email = "";
 
             getUser = await _userRepository.GetUserById(request.UserId).ConfigureAwait(false);
+            var country = await _companyRepository.GetCountries().ConfigureAwait(false);
             if (request.IsEmail)
             {
 
@@ -212,9 +219,10 @@ namespace Ontec.Core.Application.Otp.Handler.Queries
                     MobileNumber = getUser.Mobile,
                     Otp = r,
                     StatusId = (int)StatusEnum.NotVerified,
-                    CountryCodeId = await _otpRepository.GetCountryCodeId(request.CountryCode, (int)StatusEnum.Active).ConfigureAwait(false)
+                    // CountryCodeId = await _otpRepository.GetCountryCodeId(request.CountryCode, (int)StatusEnum.Active).ConfigureAwait(false)
+                    CountryCodeId = country.Where(s => s.OtherText == request.CountryCode).Select(s => s.Id).FirstOrDefault(),
                 };
-                var existingOtp = await _otpRepository.GetOtpByMobileNumberCompanyId(mobile, request.CompanyId, request.EmailId, (int)StatusEnum.NotVerified).ConfigureAwait(false);
+                var existingOtp = await _otpRepository.GetOtpByMobileNumberCompanyId(getUser.Mobile, request.CompanyId, request.EmailId, (int)StatusEnum.NotVerified).ConfigureAwait(false);
                 if (existingOtp != null)
                 {
                     _ = await _otpRepository.UpdateVerifiedOtp(existingOtp.Id, (int)StatusEnum.Inactive, null).ConfigureAwait(false);
@@ -233,8 +241,9 @@ namespace Ontec.Core.Application.Otp.Handler.Queries
                     Otp = r,
                     StatusId = (int)StatusEnum.NotVerified,
                     CountryCodeId = await _otpRepository.GetCountryCodeId(request.CountryCode, (int)StatusEnum.Active).ConfigureAwait(false)
+                    // CountryCodeId = country.Where(s => s.OtherText == request.CountryCode).Select(s => s.Id).FirstOrDefault()
                 };
-                var existingOtp = await _otpRepository.GetOtpByMobileNumberCompanyId(request.MobileNumber, request.CompanyId,email, (int)StatusEnum.NotVerified).ConfigureAwait(false);
+                var existingOtp = await _otpRepository.GetOtpByMobileNumberCompanyId(request.MobileNumber, request.CompanyId, getUser.Email, (int)StatusEnum.NotVerified).ConfigureAwait(false);
                 if (existingOtp != null)
                 {
                     _ = await _otpRepository.UpdateVerifiedOtp(existingOtp.Id, (int)StatusEnum.Inactive, null).ConfigureAwait(false);
@@ -243,7 +252,7 @@ namespace Ontec.Core.Application.Otp.Handler.Queries
 
             }
 
-           
+
             res.Type = "Update";
             res.Otp = r;
 
@@ -282,7 +291,7 @@ namespace Ontec.Core.Application.Otp.Handler.Queries
                     request.MobileNumber = request.MobileNumber.TrimStart('0');
 
                 }
-                res.MobileResponse = await _otpService.SendMobileOtp(r, "Your otp to update contact details is : "+r, request.CountryCode + request.MobileNumber).ConfigureAwait(false);
+                res.MobileResponse = await _otpService.SendMobileOtp(r, "Your OTP to update contat is " + r, request.CountryCode + request.MobileNumber).ConfigureAwait(false);
             }
             return res;
         }

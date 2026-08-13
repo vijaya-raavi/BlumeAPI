@@ -2372,7 +2372,22 @@ namespace Ontec.Infrastructure.Persistence.Repositories.UserRepository
             var result = await _genericRepository.ExecuteScalarAsync<bool>(sQuery, parameters).ConfigureAwait(false);
             return result;
         }
+        public async Task<int> GetCountryCodeId(string mobile, int companyId)
+        {
+            var sQuery = @"SELECT mobile_country_code
+                           FROM public.ohd_user  
+                           WHERE is_bulk_user =true AND 
+                          lower(mobile)=@mobile  AND company_id=@companyId ";
 
+            var parameters = new DynamicParameters();
+
+
+            parameters.Add("@mobile", mobile.ToLower());
+            parameters.Add("@companyId", companyId);
+
+            var result = await _genericRepository.ExecuteScalarAsync<int>(sQuery, parameters).ConfigureAwait(false);
+            return result;
+        }
         public async Task<int> UpdateBulkRegisterUser(RegisterUserCommand request, int userId)
         {
             try

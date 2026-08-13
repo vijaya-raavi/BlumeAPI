@@ -114,6 +114,8 @@ namespace Ontec.Core.Domain.Interface.User
         Task<int> BulkInsertUsers(IEnumerable<BulkUsers> users);
         Task<bool> IsBulkUserEmailExist(string email, int companyId);
         Task<bool> IsBulkUserMobileExist(string email, int companyId);
+
+        Task<int> GetCountryCodeId(string mobile, int companyId);
         Task<int> UpdateBulkRegisterUser(RegisterUserCommand request, int userId);
         Task<int> GetBulkUserId(string email, string mobile, int companyId);
         Task<bool> GetUserRegisteredStatus(string emailMobile, int companyId);
