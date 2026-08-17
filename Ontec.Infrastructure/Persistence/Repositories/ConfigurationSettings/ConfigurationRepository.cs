@@ -301,7 +301,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Configuration
             if (request.UpdateTo == (int)UpdateStatusEnum.TopUp)
             {
                 sQuery = @" UPDATE public.ohd_top_up_transactions
-                             SET status_id=@StatusId,
+                             SET flag=@StatusId,
                               modified_at=@ModifiedAt
                               WHERE id=@Id;
                                SELECT id from ohd_top_up_transactions WHERE id=@Id;";

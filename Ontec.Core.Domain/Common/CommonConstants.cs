@@ -34,6 +34,6 @@
         public const string NotRegistered = "User is not registered.";
         public const string UserNotLoggedIn = "User login session is not active.";
         public const string SAID = "Invalid date in south african id.";
-        public const string CountryCodeMismatch = "Country code mismatch.";;
+        public const string CountryCodeMismatch = "Country code mismatch.";
     }
 }

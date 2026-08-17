@@ -1,6 +1,4 @@
-﻿using System.Globalization;
-using System.Text;
-using Dapper;
+﻿using Dapper;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
@@ -15,16 +13,23 @@ using Ontec.Core.Cache;
 using Ontec.Core.Domain.Common;
 using Ontec.Core.Domain.Common.Helper;
 using Ontec.Core.Domain.Interface;
+using Ontec.Core.Domain.Interface.BulkUpload;
 using Ontec.Core.Domain.Interface.Common;
+using Ontec.Core.Domain.Interface.Wallet;
 using Ontec.Core.Domain.Models.Dto;
+using Ontec.Core.Infrastructure.Repositories;
 using Ontec.Infrastructure;
 using Ontec.Infrastructure.Persistence.Configurations;
+using Ontec.Infrastructure.Persistence.Repositories.BulkUpload;
 using Ontec.Infrastructure.Persistence.Repositories.Common;
+using Ontec.Infrastructure.Persistence.Repositories.Wallet;
 using Ontec.Infrastructure.Services;
 using Ontec.WebUI.Config;
 using Ontec.WebUI.Filters;
 using Ontec.WebUI.Infrastructure;
 using Serilog;
+using System.Globalization;
+using System.Text;
 
 namespace Ontec.WebUI
 {
@@ -88,6 +93,16 @@ namespace Ontec.WebUI
 
             services.AddInfrastructure();
 
+            //----------------------Bulk Upload---------------------//
+            services.AddSingleton<IBulkUploadQueue, BulkUploadQueue>();
+            services.AddHostedService<BulkUploadBackgroundService>();
+
+            services.AddScoped<IBulkUploadRepository, BulkUploadRepository>();
+            services.AddScoped<IUserProvisioningService, UserProvisioningService>();
+            services.AddScoped<IBulkUploadProcessor, BulkUploadProcessor>();
+            services.AddHostedService<BulkUploadEmailNotifierService>();
+            services.AddScoped<IWalletRepository, WalletRepository>();
+            //----------------------Bulk Upload---------------------//
             services.Configure<FormOptions>(options =>
             {
                 options.ValueLengthLimit = int.MaxValue;
@@ -254,7 +269,7 @@ namespace Ontec.WebUI
                 spa.Options.SourcePath = "ClientApp";
                 if (env.IsDevelopment())
                 {
-                    spa.UseProxyToSpaDevelopmentServer(Configuration["SpaBaseUrl"] ?? "http://localhost:8100");
+                    spa.UseProxyToSpaDevelopmentServer(Configuration["SpaBaseUrl"] ?? "http://localhost:3000");
                 }
             });
         }
