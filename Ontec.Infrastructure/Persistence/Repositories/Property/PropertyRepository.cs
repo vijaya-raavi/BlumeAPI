@@ -881,22 +881,33 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
                                     LEFT JOIN ohd_user u ON p.owner_id = u.id
                                     LEFT JOIN ohd_meter mt ON p.id = mt.property_id AND mt.status_id = @Active
                                     LEFT JOIN public.ohd_property_user_relation per ON p.id = per.property_id AND per.status_id = @Active
-                                    WHERE p.status_id != @DeActive
+                                    --WHERE p.status_id != @DeActive
                      ";
 
             // filter according conditions
+            string whereClause = string.Empty;
+            // filter according conditions
             if (request.StatusId.HasValue && request.StatusId.Value != 0)
             {
-                baseQuery += " AND p.status_id = @StatusId ";
+                whereClause += " WHERE p.status_id = @StatusId ";
                 parameters.Add("@StatusId", request.StatusId);
             }
-
             if (request.EstateId.HasValue && request.EstateId.Value != 0)
             {
-                baseQuery += " AND p.estate_id = @EstateId ";
-                parameters.Add("@EstateId", request.EstateId);
-            }
+                if (!string.IsNullOrEmpty(whereClause))
+                {
 
+                    whereClause += " AND p.estate_id = @EstateId ";
+                    parameters.Add("@EstateId", request.EstateId);
+                }
+                else
+                {
+
+                }
+                whereClause += " WHERE p.estate_id = @EstateId ";
+                parameters.Add("@EstateId", request.EstateId);
+
+            }
             // search functionality conditions
             if (!string.IsNullOrWhiteSpace(request.SearchText) && request.SearchText.Trim() != "string")
             {
@@ -908,17 +919,35 @@ namespace Ontec.Infrastructure.Persistence.Property.Repository
                     string param = "@Search" + index;
                     parameters.Add(param, "%" + t + "%");
 
-                    baseQuery += $@"AND (
-                                         LOWER(p.name) ILIKE {param}
-                                         OR LOWER(u.first_name) ILIKE {param}
+                    if (!string.IsNullOrEmpty(whereClause))
+                    {
+                        whereClause += $@" AND (
+                                        LOWER(u.first_name) ILIKE {param}
                                          OR LOWER(u.last_name) ILIKE {param}
+                                         OR LOWER(p.name) ILIKE {param}
+                                         OR LOWER(p.unit_number) ILIKE {param}
+                                         OR LOWER(p.address_line_1) ILIKE {param}
+                                         OR LOWER(mt.meter_number) ILIKE {param}
+                                       )";
+                    }
+                    else
+                    {
+                        whereClause += $@" WHERE (
+                                        LOWER(u.first_name) ILIKE {param}
+                                         OR LOWER(u.last_name) ILIKE {param}
+                                         OR LOWER(p.name) ILIKE {param}
                                          OR LOWER(p.unit_number) ILIKE {param}
                                          OR LOWER(p.address_line_1) ILIKE {param}
                                          OR LOWER(mt.meter_number) ILIKE {param}
                                        )";
 
+                    }
                     index++;
                 }
+            }
+            if (!string.IsNullOrEmpty(whereClause))
+            {
+                baseQuery += whereClause;
             }
 
             // Total count query
