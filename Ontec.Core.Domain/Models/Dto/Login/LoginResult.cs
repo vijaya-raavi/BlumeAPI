@@ -30,6 +30,9 @@ namespace Ontec.Core.Domain.Models.Dto.Login
         public bool IsForcedPasswordChange {  get; set; }
 
         public int CompanyId {  get; set; }
+        public bool IsBulkUser { get; set; }
+        public int CountryId { get; set; }
+        public string CountryCode { get; set; }
 
     }
 }

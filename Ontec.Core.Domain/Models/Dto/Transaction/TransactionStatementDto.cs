@@ -19,10 +19,11 @@
         {
             Details = [];
         }
-       
+        public decimal TotalAuxillaryamount { get; set; }
+        public bool IsHaveAuxAccount { get; set; }
         public string Meter { get; set; }
         public decimal Unit { get; set; }
-        public string Date { get; set; }
+        public DateTime Date { get; set; }
         public decimal TaxAmount { get; set; }
         public decimal TotalAmount { get; set; }
         public decimal TenderedAmount {  get; set; }

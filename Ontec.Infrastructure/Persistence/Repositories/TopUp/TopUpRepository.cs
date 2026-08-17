@@ -1,6 +1,5 @@
-﻿using System.Globalization;
-using System.Text;
-using Dapper;
+﻿using Dapper;
+using iText.StyledXmlParser.Jsoup.Nodes;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
@@ -25,6 +24,8 @@ using Ontec.Core.Domain.Requests.TopUp.Command;
 using Ontec.Core.Domain.Requests.TopUp.Queries;
 using Scriban;
 using SelectPdf;
+using System.Globalization;
+using System.Text;
 
 //using SelectPdf;
 
@@ -1481,7 +1482,8 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                             tut.vend_response AS VendResponse,
                             tut.Amount AS ActualRechargeAmount,
                             tut.receipt_number AS RCTNo,
-                             tut.is_in_house_txn AS IsInHouseTxn
+                             tut.is_in_house_txn AS IsInHouseTxn,
+                              ( tut.discount * tut.Amount ) AS Discount ,
                             FROM public.ohd_top_up_transactions  AS tut
                             LEFT JOIN ohd_user AS u ON tut.user_id=u.id
                             LEFT JOIN ohd_company AS c ON u.company_id=c.id
@@ -2957,8 +2959,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
         //}
         public async Task<GetSTSTopUpTransactions> GetSTSTopUps(List<string> RecNum, DateTime fromDate, DateTime toDate)
         {
-            decimal totalDebtAmount = 0;
-            decimal totalFixedAmunt = 0;
+
             decimal totalVatExcluding = 0;
             decimal totalVatIncluding = 0;
             decimal stdAmt = 0;
@@ -2980,7 +2981,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                                 tut.meter_id AS MeterId,
                                tut.is_in_house_txn As IsInHouseTransaction,
                                 tut.transaction_id AS TxnId,
-                                CONCAT('Successfull' ,' ', tut.created_at) AS CreatedAt,
+                                CONCAT('Successfull' ,' ', to_CHAR(tut.created_at,'dd-MM-yyyy  HH24:MI:ss')) AS CreatedAt,
                                 tut.std_token AS StdToken,
                                 tut.bsst_token AS BsstToken,
                                 tut.key_change_token AS KeyChangeToken,
@@ -3014,6 +3015,12 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                 {
                     foreach (var transaction in result)
                     {
+                        decimal totalDebtAmount = 0;
+                        decimal totalFixedAmunt = 0;
+                        decimal fixedAmount = 0;
+                        decimal fixedTax = 0;
+                        decimal debtAmount = 0;
+                        decimal debtTax = 0;
                         transaction.TarrifUnits = new List<string>();
                         totalPurchase += transaction.stdUnits;
                         if (!string.IsNullOrEmpty(transaction.Tarrif))
@@ -3065,13 +3072,11 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                             }
                             if (containsDebt)
                             {
-                                decimal debtAmount = 0;
-                                decimal debtTax = 0;
-                                int debtCount = (Int32)vendRes["debt"].Count();
 
-                                if (debtCount != 8)
+                                var debtCount = vendRes["debt"];
+                                if (debtCount.Type == JTokenType.Array)
                                 {
-                                    JArray debtArray = (JArray)vendRes["vendRes"]["debt"];
+                                    JArray debtArray = (JArray)vendRes["debt"];
                                     if (debtArray != null && debtArray.Count > 0)
                                     {
 
@@ -3092,7 +3097,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                                                 decimal debtremainingBalance = Convert.ToDecimal(remainingBalance);
                                                 debtremainingBalance = Math.Round(debtremainingBalance / 100, 2);
 
-                                                totalDebtAmount += (debtAmount) + (debtTax);
+                                                totalDebtAmount += (debtAmount);// + (debtTax);
                                                 totalTax += debtTax;
                                             }
 
@@ -3101,6 +3106,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                                 }
                                 else
                                 {
+
                                     decimal amount = 0;
                                     decimal tax = 0;
                                     decimal remainingBalance = 0;
@@ -3114,25 +3120,21 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                                     debtTax = Math.Round(debtTax / 100, 2);
                                     decimal debtremainingBalance = Convert.ToDecimal(remainingBalance);
                                     debtremainingBalance = Math.Round(debtremainingBalance / 100, 2);
-
-
-                                    totalDebtAmount += (debtAmount) + (debtTax);
-                                    totalTax += debtTax;
+                                    totalDebtAmount = (debtAmount) + (debtTax);
+                                    totalTax = debtTax;
                                 }
                             }
                             if (containsFixed)
                             {
-                                int fixedCount = (Int32)vendRes["fixed"].Count();
-                                decimal fixedAmount = 0;
-                                decimal fixedTax = 0;
-                                if (fixedCount != 5)
+                                var fixedCount = vendRes["fixed"];
+
+                                if (fixedCount.Type == JTokenType.Array)
                                 {
                                     JArray fixedArray = (JArray)vendRes["fixed"];
                                     if (fixedArray != null && fixedArray.Count > 0)
                                     {
                                         foreach (var fix in fixedArray)
                                         {
-
                                             if (fix != null)
                                             {
                                                 string text = (string)fix["#text"];
@@ -3150,6 +3152,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                                 }
                                 else
                                 {
+
                                     double amount = (double)vendRes["fixed"]["@amt"];
                                     double tax = (double)vendRes["fixed"]["@tax"];
                                     string text = (string)vendRes["fixed"]["#text"];
@@ -3158,8 +3161,8 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                                     fixedAmount = Convert.ToDecimal(amount);
                                     fixedTax = Convert.ToDecimal(tax);
 
-                                    totalFixedAmunt += (fixedAmount);
-                                    totalTax += fixedTax;
+                                    totalFixedAmunt = (fixedAmount);
+                                    totalTax = fixedTax;
                                 }
 
                             }
@@ -3200,7 +3203,7 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                             }
                         }
 
-                        transaction.DebtAmount = totalDebtAmount + totalFixedAmunt + transaction.TransactionFee;
+                        transaction.DebtAmount = totalDebtAmount;// + totalFixedAmunt;// + transaction.TransactionFee;
                         transaction.debtTax = totalTax;
                     }
                     stsTxn.TotalPurchase = totalPurchase;
@@ -3215,7 +3218,6 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
             }
             return stsTxn;
         }
-
 
         public async Task<string> GetIPayMethodByPaymentMethodId(int id)
         {
@@ -3365,10 +3367,21 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
             decimal totalVatIncluding = 0;
             decimal totalTax = 0;
             string htmlContent = "";
+            string strBsstAmount = string.Empty;
+            string strBsstTax = string.Empty;
             var htmlTemplate = "";
             StringBuilder resultBsstToken = new StringBuilder();
             StringBuilder resultStdtoken = new StringBuilder();
             StringBuilder resultKeychangeToken = new StringBuilder();
+
+            decimal debtremainingBalance = 0;
+
+            string strMainAmount = string.Empty;
+            decimal stdUnits = 0;
+            decimal stdAmt = 0;
+            string keyChangeToken = "";
+            string bsstToken = "";
+            decimal stdTax = 0;
             //var topup = new EmailTemplateDto();
             if (receiptDto != null)
             {
@@ -3483,26 +3496,37 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                 htmlTemplate = await File.ReadAllTextAsync(templatePath);
                 var debts = new List<DebtItem>();
                 var fixedItems = new List<FixedItem>();
-                decimal debtremainingBalance = 0;
                 if (receiptDto.VendResponse != null)
                 {
                     JObject jsonObject = JObject.Parse(receiptDto.VendResponse);
 
-                    bool containsDebt = jsonObject["ipayMsg"]?["elecMsg"]?["vendRes"]?["debt"] != null;
-                    bool containsFixed = jsonObject["ipayMsg"]?["elecMsg"]?["vendRes"]?["fixed"] != null;
+                    var vendRes = jsonObject["ipayMsg"]?["elecMsg"]?["reprintManyRes"]?["vendRes"]
+                         ?? jsonObject["ipayMsg"]?["elecMsg"]?["vendRes"];
+
+                    bool containsVend = vendRes != null;
+                    bool containsDebt = vendRes?["debt"] != null;
+                    bool containsFixed = vendRes?["fixed"] != null;
+                    bool containStdToken = vendRes?["stdToken"] != null;
+                    bool containbsstToken = vendRes?["bsstToken"] != null;
+                    bool containkeyChangeToken = vendRes?["keyChangeToken"] != null;
+
+                    bool isContainTariffToken = vendRes?["tariff"] != null;
+
+
                     if (containsDebt)
                     {
                         decimal debtAmount = 0;
                         decimal debtTax = 0;
-                        int debtCount = (Int32)jsonObject["ipayMsg"]["elecMsg"]["vendRes"]["debt"].Count();
+                        string strdebtAmount = string.Empty;
+                        string strdebtTax = string.Empty;
+                        var debtCount = vendRes["debt"];
 
-                        if (debtCount != 8)
+                        if (debtCount.Type == JTokenType.Array)
                         {
-                            JArray debtArray = (JArray)jsonObject["ipayMsg"]["elecMsg"]["vendRes"]["debt"];
+                            JArray debtArray = (JArray)vendRes["debt"];
                             if (debtArray != null && debtArray.Count > 0)
                             {
 
-                                htmlContent += @"<div style='margin-bottom:10px; page-break-inside :avoid;page-break-inside:auto;text-align: center;'><h2> Debt Items </h2></div>";
                                 foreach (var debt in debtArray)
                                 {
 
@@ -3519,15 +3543,20 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                                         debtTax = Math.Round(debtTax / 100, 2);
                                         debtremainingBalance = Convert.ToDecimal(remainingBalance);
                                         debtremainingBalance = Math.Round(debtremainingBalance / 100, 2);
+
                                         debts.Add(new DebtItem
                                         {
                                             Amount = debtAmount,
                                             Tax = debtTax,
+                                            strTax = debtTax.ToString("N2", new CultureInfo("en-Us")),
                                             RemainBalance = debtremainingBalance,
                                             Text = text
                                         });
                                         totalDebtAmount += (debtAmount) + (debtTax);
                                         totalTax += debtTax;
+                                        strdebtTax = debtTax.ToString("N2", new CultureInfo("en-Us"));
+                                        strdebtAmount = debtAmount.ToString("N2", new CultureInfo("en-Us"));
+
                                     }
 
                                 }
@@ -3538,40 +3567,43 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                             decimal amount = 0;
                             decimal tax = 0;
                             decimal remainingBalance = 0;
-                            amount = (decimal)jsonObject["ipayMsg"]["elecMsg"]["vendRes"]["debt"]["@amt"];
-                            tax = (decimal)jsonObject["ipayMsg"]["elecMsg"]["vendRes"]["debt"]["@tax"];
-                            string text = (string)jsonObject["ipayMsg"]["elecMsg"]["vendRes"]["debt"]["#text"];
-                            remainingBalance = (decimal)jsonObject["ipayMsg"]["elecMsg"]["vendRes"]["debt"]["@rem"];
+                            amount = (decimal)vendRes["debt"]["@amt"];
+                            tax = (decimal)vendRes["debt"]["@tax"];
+                            string text = (string)vendRes["debt"]["#text"];
+                            remainingBalance = (decimal)vendRes["debt"]["@rem"];
                             debtAmount = Convert.ToDecimal(amount);
                             debtAmount = Math.Round(debtAmount / 100, 2);
                             debtTax = Convert.ToDecimal(tax);
                             debtTax = Math.Round(debtTax / 100, 2);
                             debtremainingBalance = Convert.ToDecimal(remainingBalance);
                             debtremainingBalance = Math.Round(debtremainingBalance / 100, 2);
-
                             debts.Add(new DebtItem
                             {
                                 Amount = debtAmount,
+                                strAmount = debtAmount.ToString("N2", new CultureInfo("en-Us")),
                                 Tax = debtTax,
+                                strTax = debtTax.ToString("N2", new CultureInfo("en-Us")),
                                 RemainBalance = debtremainingBalance,
                                 Text = text
-
                             });
-                            totalDebtAmount += (debtAmount) + (debtTax);
-                            totalTax += debtTax;
+                            totalDebtAmount = (debtAmount) + (debtTax);
+                            totalTax = debtTax;
+                            strdebtTax = debtTax.ToString("N2", new CultureInfo("en-Us"));
+                            strdebtAmount = debtAmount.ToString("N2", new CultureInfo("en-Us"));
                         }
                     }
                     if (containsFixed)
                     {
-                        int fixedCount = (Int32)jsonObject["ipayMsg"]["elecMsg"]["vendRes"]["fixed"].Count();
+                        var fixedCount = vendRes["fixed"];
                         decimal fixedAmount = 0;
                         decimal fixedTax = 0;
-                        if (fixedCount != 5)
+                        string strfixedAmount = string.Empty;
+                        string strfixedTax = string.Empty;
+                        if (fixedCount.Type == JTokenType.Array)
                         {
-                            JArray fixedArray = (JArray)jsonObject["ipayMsg"]["elecMsg"]["vendRes"]["fixed"];
+                            JArray fixedArray = (JArray)vendRes["fixed"];
                             if (fixedArray != null && fixedArray.Count > 0)
                             {
-                                htmlContent += @"<div style='margin-bottom: 20px; text-align: center;page-break-inside :avoid;page-break-inside:auto;'><h2> Fixed Items </h2></div>";
                                 foreach (var fix in fixedArray)
                                 {
 
@@ -3584,24 +3616,29 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                                         fixedAmount = Math.Round(fixedAmount / 100, 2);
                                         fixedTax = Convert.ToDecimal(tax);
                                         fixedTax = Math.Round(fixedTax / 100, 2);
+
                                         fixedItems.Add(new FixedItem
                                         {
                                             Tax = fixedTax,
+                                            strTax = fixedTax.ToString("N2", new CultureInfo("en-Us")),
                                             Amount = fixedAmount,
+                                            strAmount = fixedAmount.ToString("N2", new CultureInfo("en-Us")),
                                             Text = text
 
                                         });
                                         totalFixedAmunt += (fixedAmount);
                                         totalTax += fixedTax;
+                                        strfixedTax = totalTax.ToString("N2", new CultureInfo("en-Us"));
+                                        strfixedAmount = totalFixedAmunt.ToString("N2", new CultureInfo("en-Us"));
                                     }
                                 }
                             }
                         }
                         else
                         {
-                            double amount = (double)jsonObject["ipayMsg"]["elecMsg"]["vendRes"]["fixed"]["@amt"];
-                            double tax = (double)jsonObject["ipayMsg"]["elecMsg"]["vendRes"]["fixed"]["@tax"];
-                            string text = (string)jsonObject["ipayMsg"]["elecMsg"]["vendRes"]["fixed"]["#text"];
+                            double amount = (double)vendRes["fixed"]["@amt"];
+                            double tax = (double)vendRes["fixed"]["@tax"];
+                            string text = (string)vendRes["fixed"]["#text"];
                             amount = Math.Round(amount / 100, 2);
                             tax = Math.Round(tax / 100, 2);
                             fixedAmount = Convert.ToDecimal(amount);
@@ -3609,14 +3646,36 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                             fixedItems.Add(new FixedItem
                             {
                                 Tax = fixedTax,
+                                strTax = fixedTax.ToString("N2", new CultureInfo("en-Us")),
                                 Amount = fixedAmount,
+                                strAmount = fixedAmount.ToString("N2", new CultureInfo("en-Us")),
                                 Text = text
 
                             });
-                            totalFixedAmunt += (fixedAmount);
-                            totalTax += fixedTax;
+                            totalFixedAmunt = (fixedAmount);
+                            totalTax = fixedTax;
+                            strfixedTax = totalTax.ToString("N2", new CultureInfo("en-Us"));
+                            strfixedAmount = totalFixedAmunt.ToString("N2", new CultureInfo("en-Us"));
                         }
 
+                    }
+                    if (containStdToken)
+                    {
+                        stdAmt = (decimal)vendRes["stdToken"]["@amt"];
+                        stdUnits = (decimal)vendRes["stdToken"]["@units"];
+                        stdTax = (decimal)vendRes["stdToken"]["@tax"];
+                        string text = (string)vendRes["stdToken"]["#text"];
+
+                    }
+                    if (vendRes?["keyChangeToken"] != null)
+                    {
+                        var keyChangeCodes = vendRes["keyChangeToken"]["code"].Select(c => (string)c);
+                        keyChangeToken = string.Join(",", keyChangeCodes);
+                    }
+
+                    if (vendRes?["bsstToken"] != null)
+                    {
+                        bsstToken = (string)vendRes["bsstToken"]["#text"];
                     }
 
                 }
@@ -3747,6 +3806,12 @@ namespace Ontec.Infrastructure.Persistence.Repositories.TopUp
                     model.ShowTarrifToken = true;
                     model.Tariff = tariff;
                 }
+                //if (receiptDto.Discount > 0)
+                //{
+                // model.Discount = receiptDto.Discount;
+                // model.ShowDiscount = true;
+                //}
+
                 // Assign Debt
                 model.ShowDebt = model.DebtItems != null && model.DebtItems.Count > 0;
                 model.ShowFixed = model.FixedItems != null && model.FixedItems.Count > 0;

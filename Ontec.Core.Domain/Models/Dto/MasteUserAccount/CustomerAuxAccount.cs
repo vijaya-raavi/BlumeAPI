@@ -14,7 +14,7 @@
         public string CustomerAgreementId { get; set; }
         public string AuxTypeId { get; set; }
         public string RecordStatus { get; set; }
-        public string AuxChargeScheduleId { get; set; }
+        public int AuxChargeScheduleId { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime SuspendUntil { get; set; }
     }
