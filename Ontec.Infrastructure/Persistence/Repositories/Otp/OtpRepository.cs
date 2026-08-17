@@ -54,13 +54,19 @@ namespace Ontec.Infrastructure.Persistence.Repositories.Otp
         }
         public async Task<OtpModel> GetOtpByMobileNumberCompanyId(string mobile, int companyId, string emailId, int statusId)
         {
-            var sQuery = @"Select ""Otp"" as Otp,""Id"" as Id, created_at as CreatedAt from public.ohd_otp
-                          where  ""companyId""=@companyId and ""MobileNumber""=@mobileNumber and ""StatusId""=@statusId and Lower(""Email"")=@emailId";
+            var sQuery = @"SELECT ""Otp"" as Otp,""Id"" as Id,
+                            created_at as CreatedAt 
+                            FROM public.ohd_otp
+                            WHERE  ""companyId""=@companyId 
+                            AND ""MobileNumber""=@mobileNumber 
+                            AND (""StatusId""=@statusId  OR ""StatusId""=@Pending)
+                            AND Lower(""Email"")=@emailId";
 
             var parameters = new DynamicParameters();
             parameters.Add("@companyId", companyId);
             parameters.Add("@mobileNumber", mobile);
             parameters.Add("@statusId", statusId);
+            parameters.Add("@Pending", (int)StatusEnum.Pending);
             parameters.Add("@emailId", emailId.ToLower());
 
             var result = await _genericRepository.GetFirstOrDefaultAsync<OtpModel>(sQuery, parameters).ConfigureAwait(false);
